@@ -1,0 +1,77 @@
+Bootstrap: docker
+From: ubuntu:22.04
+Stage: build
+
+%post
+    apt-get update && apt-get install -y \
+        software-properties-common \
+        mpich \
+        libmpich-dev \
+        netcat \
+        git \
+        vim \
+        gcc \
+        g++ \
+        build-essential \
+        cmake \
+        wget \
+        bzip2 \
+        libgl1 \
+        libxrender1 \
+        libsm6 \
+        libxext6 \
+        curl \
+        ca-certificates \
+        gnupg \
+        lsb-release
+
+    # Add OpenFOAM repository
+    sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
+    add-apt-repository http://dl.openfoam.org/ubuntu
+    apt-get update
+    apt-get install -y openfoam10
+
+    # Set up OpenFOAM environment
+    echo "source /opt/openfoam10/etc/bashrc" >> /etc/bash.bashrc
+
+    # Install Anaconda
+    mkdir -p /opt/download
+    cd /opt/download
+    wget https://repo.anaconda.com/archive/Anaconda3-2024.10-1-Linux-x86_64.sh
+    chmod +x Anaconda3-2024.10-1-Linux-x86_64.sh
+    ./Anaconda3-2024.10-1-Linux-x86_64.sh -b -p /opt/conda
+
+    # Set up conda
+    export PATH="/opt/conda/bin:$PATH"
+    . /opt/conda/etc/profile.d/conda.sh
+    conda config --set always_yes yes --set changeps1 no
+    conda update -n base -c defaults conda
+
+    # Create fenicsx-newenv with MPI-enabled h5py and all required packages
+    conda create -n mclaren-newenv -c conda-forge \
+        mpich \
+        mpi4py \
+        "hdf5=*=mpi*" \
+        "h5py=*=mpi*" \
+        numpy \
+        scipy \
+        pyvista \
+        tqdm \
+        pytest \
+        pyyaml \
+        untangle \
+        meshio \
+        pandas
+
+%environment
+    export PATH="/opt/conda/bin:$PATH"
+    . /opt/conda/etc/profile.d/conda.sh
+    conda activate mclaren-newenv
+    export PYTHONNOUSERSITE=1  # <-- Prevent loading ~/.local/lib/*
+    export CC=$(which gcc)
+    export CXX=$(which g++)
+    source /opt/openfoam10/etc/bashrc
+
+%runscript
+    exec python3 "$@"
+
