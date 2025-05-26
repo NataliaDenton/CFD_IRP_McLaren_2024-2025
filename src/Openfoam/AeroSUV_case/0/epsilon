@@ -1,0 +1,19 @@
+dimensions      [0 2 -3 0 0 0 0];
+internalField   uniform 0.09;
+boundaryField
+{
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 0.09;
+    }
+    outlet
+    {
+        type            zeroGradient;
+    }
+    walls
+    {
+        type            epsilonWallFunction;
+        value           uniform 0.09;
+    }
+}
