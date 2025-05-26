@@ -3,23 +3,15 @@ From: ubuntu:22.04
 Stage: build
 
 %post
-    # Define functions
+    ###########################
+    # Define utility functions
+    ###########################
     check_and_install_apt_package () {
         if ! dpkg -s "$1" >/dev/null 2>&1; then
             echo "Installing $1..."
             apt-get install -y "$1"
         else
             echo "$1 already installed, skipping."
-        fi
-    }
-
-    check_and_install_conda_package () {
-        local pkg=$1
-        if ! conda list -n mclaren-newenv | grep -q "^${pkg} "; then
-            echo "Installing $pkg..."
-            conda install -n mclaren-newenv "$pkg"
-        else
-            echo "$pkg already installed in conda env."
         fi
     }
 
@@ -47,26 +39,13 @@ Stage: build
         curl \
         ca-certificates \
         gnupg \
-        lsb-release; do
+        lsb-release \
+        python3-pip; do
         check_and_install_apt_package "$pkg"
     done
 
     ###########################
-    # OpenFOAM (only if not yet installed)
-    ###########################
-    if [ ! -d "/opt/openfoam10" ]; then
-        echo "Installing OpenFOAM10..."
-        wget -O - https://dl.openfoam.org/gpg.key | apt-key add -
-        add-apt-repository http://dl.openfoam.org/ubuntu
-        apt-get update
-        apt-get install -y openfoam10
-        echo "source /opt/openfoam10/etc/bashrc" >> /etc/bash.bashrc
-    else
-        echo "OpenFOAM already installed, skipping."
-    fi
-
-    ###########################
-    # Install Anaconda if not yet installed
+    # Install Anaconda (if needed)
     ###########################
     if [ ! -d "/opt/conda" ]; then
         echo "Installing Anaconda..."
@@ -102,19 +81,33 @@ Stage: build
             pyyaml \
             untangle \
             meshio \
-            pandas
+            pandas \
+            matplotlib \
+            openfoamparser \
+            ofparser
     else
         echo "Conda environment mclaren-newenv already exists, skipping."
+    fi
+
+    ###########################
+    # Install PyFoam via pip
+    ###########################
+    . /opt/conda/etc/profile.d/conda.sh
+    conda activate mclaren-newenv
+    if ! python -c "import PyFoam" &>/dev/null; then
+        echo "Installing PyFoam..."
+        pip install PyFoam
+    else
+        echo "PyFoam already installed, skipping."
     fi
 
 %environment
     export PATH="/opt/conda/bin:$PATH"
     . /opt/conda/etc/profile.d/conda.sh
     conda activate mclaren-newenv
-    export PYTHONNOUSERSITE=1  # Prevent loading ~/.local/lib/*
+    export PYTHONNOUSERSITE=1
     export CC=$(which gcc)
     export CXX=$(which g++)
-    source /opt/openfoam10/etc/bashrc
 
 %runscript
     exec python3 "$@"
