@@ -1,6 +1,5 @@
 Bootstrap: docker
 From: ubuntu:22.04
-Stage: build
 
 %post
     ###########################
@@ -18,7 +17,8 @@ Stage: build
     ###########################
     # Essential System Packages
     ###########################
-    apt-get update && apt-get install -y software-properties-common
+    apt-get update
+    apt-get install -y software-properties-common
 
     for pkg in \
         mpich \
@@ -64,7 +64,7 @@ Stage: build
     export PATH="/opt/conda/bin:$PATH"
     . /opt/conda/etc/profile.d/conda.sh
     conda config --set always_yes yes --set changeps1 no
-    conda update -n base -c defaults conda
+    conda update -n base -c defaults conda --yes
 
     if ! conda info --envs | grep -q "mclaren-newenv"; then
         echo "Creating Conda environment mclaren-newenv..."
@@ -82,21 +82,29 @@ Stage: build
             untangle \
             meshio \
             pandas \
-            matplotlib \
-            openfoamparser \
-            ofparser
+            matplotlib --yes
     else
         echo "Conda environment mclaren-newenv already exists, skipping."
     fi
 
     ###########################
-    # Install PyFoam via pip
+    # Install OpenFOAM Python packages and PyFoam via pip
     ###########################
     . /opt/conda/etc/profile.d/conda.sh
     conda activate mclaren-newenv
+
+    # Install openfoamparser-ilya via pip
+    if ! python -c "import openfoamparser" &>/dev/null; then
+        echo "Installing openfoamparser-ilya via pip..."
+        pip install --upgrade openfoamparser-ilya
+    else
+        echo "openfoamparser-ilya already installed, skipping."
+    fi
+
+
     if ! python -c "import PyFoam" &>/dev/null; then
         echo "Installing PyFoam..."
-        pip install PyFoam
+        pip install --upgrade --quiet PyFoam
     else
         echo "PyFoam already installed, skipping."
     fi
