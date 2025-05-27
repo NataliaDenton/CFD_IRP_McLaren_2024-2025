@@ -22,27 +22,27 @@ FoamFile
     {
         type            patch;
         nFaces          400;
-        startFace       60891;
+        startFace       60144;
     }
     outlet
     {
         type            patch;
         nFaces          400;
-        startFace       61291;
+        startFace       60544;
     }
     walls
     {
         type            wall;
         inGroups        1(wall);
         nFaces          1600;
-        startFace       61691;
+        startFace       60944;
     }
     Geometry
     {
         type            wall;
         inGroups        1(wall);
-        nFaces          1232;
-        startFace       63291;
+        nFaces          1224;
+        startFace       62544;
     }
 )
 

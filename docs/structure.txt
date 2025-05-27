@@ -1,52 +1,10 @@
-├── .git
-│   ├── HEAD
-│   ├── branches
-│   ├── config
-│   ├── description
-│   ├── hooks
-│   │   ├── applypatch-msg.sample
-│   │   ├── commit-msg.sample
-│   │   ├── fsmonitor-watchman.sample
-│   │   ├── post-update.sample
-│   │   ├── pre-applypatch.sample
-│   │   ├── pre-commit.sample
-│   │   ├── pre-merge-commit.sample
-│   │   ├── pre-push.sample
-│   │   ├── pre-rebase.sample
-│   │   ├── pre-receive.sample
-│   │   ├── prepare-commit-msg.sample
-│   │   ├── push-to-checkout.sample
-│   │   └── update.sample
-│   ├── index
-│   ├── info
-│   │   └── exclude
-│   ├── logs
-│   │   ├── HEAD
-│   │   └── refs
-│   │       ├── heads
-│   │       │   └── main
-│   │       └── remotes
-│   │           └── origin
-│   │               └── HEAD
-│   ├── objects
-│   │   ├── info
-│   │   └── pack
-│   │       ├── pack-8eb81cf20ab5fdfed487d64c0908f07c426650de.idx
-│   │       └── pack-8eb81cf20ab5fdfed487d64c0908f07c426650de.pack
-│   ├── packed-refs
-│   └── refs
-│       ├── heads
-│       │   └── main
-│       ├── remotes
-│       │   └── origin
-│       │       └── HEAD
-│       └── tags
 ├── README.md
 ├── containers
 │   ├── Python_container.def
 │   └── README.md
 ├── docs
-│   └── README.md
+│   ├── README.md
+│   └── structure.txt
 ├── file_path_finder.py
 ├── src
 │   ├── Openfoam
@@ -55,9 +13,23 @@
 │   │   │   │   ├── U
 │   │   │   │   ├── epsilon
 │   │   │   │   ├── k
+│   │   │   │   ├── nut
 │   │   │   │   └── p
 │   │   │   ├── constant
 │   │   │   │   ├── polyMesh
+│   │   │   │   │   ├── boundary
+│   │   │   │   │   ├── cellLevel
+│   │   │   │   │   ├── cellZones
+│   │   │   │   │   ├── faceZones
+│   │   │   │   │   ├── faces
+│   │   │   │   │   ├── level0Edge
+│   │   │   │   │   ├── neighbour
+│   │   │   │   │   ├── owner
+│   │   │   │   │   ├── pointLevel
+│   │   │   │   │   ├── pointZones
+│   │   │   │   │   ├── points
+│   │   │   │   │   └── surfaceIndex
+│   │   │   │   ├── surfaceFeatureDict
 │   │   │   │   ├── transportProperties
 │   │   │   │   ├── triSurface
 │   │   │   │   │   ├── Geometry
@@ -77,17 +49,21 @@
 │   │   │   │   │   │   ├── 14_suspension_front.stl
 │   │   │   │   │   │   ├── 15_suspension_rear.stl
 │   │   │   │   │   │   ├── 16_exhaust.stl
-│   │   │   │   │   │   ├── 17_wheels-front.stl
 │   │   │   │   │   │   ├── 18_wheels-rear.stl
 │   │   │   │   │   │   ├── 19_porous-media.stl
 │   │   │   │   │   │   ├── 20_cooling-air-closing.stl
-│   │   │   │   │   │   └── 21_engine-compartment-closing.stl
+│   │   │   │   │   │   ├── 21_engine-compartment-closing.stl
+│   │   │   │   │   │   └── frontWheels
+│   │   │   │   │   │       └── 17_wheels-front.stl
 │   │   │   │   │   └── Geometry.tar.xz
 │   │   │   │   └── turbulenceProperties
 │   │   │   └── system
+│   │   │       ├── blockMeshDict
 │   │   │       ├── controlDict
 │   │   │       ├── fvSchemes
-│   │   │       └── fvSolution
+│   │   │       ├── fvSolution
+│   │   │       ├── snappyHexMeshDict
+│   │   │       └── surfaceFeatureExtractDict
 │   │   └── simple_Auto_openFOAM_file_populator.py
 │   └── README.md
 └── tests
