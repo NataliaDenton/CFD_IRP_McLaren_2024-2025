@@ -5,49 +5,71 @@
 |   \\  /    A nd           | Website:  www.openfoam.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
+
 FoamFile
 {
     version     2.0;
     format      ascii;
-    arch        "LSB;label=32;scalar=64";
     class       dictionary;
     location    "system";
     object      fvSolution;
 }
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-
-
 
 
 solvers
 {
-    p
+p
     {
-        solver          PCG;
-        preconditioner  DIC;
-        tolerance       1e-06;
-        relTol          0;
+        solver          GAMG;
+        tolerance       1e-6;
+        relTol          0.1;
+        smoother        GaussSeidel;
+        nPreSweeps      0;
+        nPostSweeps     2;
+        cacheAgglomeration true;
+        aggressiveCoeffs 1;
+        mergeLevels     1;
     }
+
+
     U
     {
         solver          smoothSolver;
-        smoother        GaussSeidel;
-        tolerance       1e-05;
+        smoother        symGaussSeidel;
+        tolerance       1e-5;
         relTol          0.1;
     }
-    "(k|epsilon)"
+
+    k
     {
         solver          smoothSolver;
-        smoother        GaussSeidel;
-        tolerance       1e-05;
+        smoother        symGaussSeidel;
+        tolerance       1e-5;
+        relTol          0.1;
+    }
+
+    epsilon
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-5;
         relTol          0.1;
     }
 }
+
 SIMPLE
 {
     nNonOrthogonalCorrectors 0;
+    residualControl
+    {
+        p               1e-3;
+        U               1e-4;
+        "(k|epsilon)"   1e-4;
+    }
 }
+
 relaxationFactors
 {
     fields
@@ -61,3 +83,4 @@ relaxationFactors
         epsilon         0.7;
     }
 }
+

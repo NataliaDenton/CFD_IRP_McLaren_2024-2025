@@ -16,26 +16,33 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-3
+4
 (
     inlet
     {
         type            patch;
         nFaces          400;
-        startFace       22800;
+        startFace       60891;
     }
     outlet
     {
         type            patch;
         nFaces          400;
-        startFace       23200;
+        startFace       61291;
     }
     walls
     {
         type            wall;
         inGroups        1(wall);
         nFaces          1600;
-        startFace       23600;
+        startFace       61691;
+    }
+    Geometry
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          1232;
+        startFace       63291;
     }
 )
 

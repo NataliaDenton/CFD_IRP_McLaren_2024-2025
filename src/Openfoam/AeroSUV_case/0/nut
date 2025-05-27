@@ -5,41 +5,44 @@
 |   \\  /    A nd           | Website:  www.openfoam.com                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
-
-
 FoamFile
 {
     version     2.0;
     format      ascii;
-    class       volVectorField;
+    class       volScalarField;
     location    "0";
-    object      U;
+    object      nut;
 }
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+dimensions      [0 2 -1 0 0 0 0]; // kinematic viscosity dimensions
 
-dimensions      [0 1 -1 0 0 0 0];
-internalField   uniform (1 0 0);
+internalField   uniform 1e-5; // initial guess for turbulent viscosity, tune as needed
+
 boundaryField
 {
     inlet
     {
         type            fixedValue;
-        value           uniform (31.3 0 0);
+        value           uniform 1e-5;
     }
+
+
     outlet
     {
         type            zeroGradient;
     }
+
     walls
     {
-        type            noSlip;
+        type            nutkWallFunction;
+        value           uniform 0;
     }
 
     Geometry
     {
-        type            zeroGradient;
+        type            nutkWallFunction;
+        value           uniform 0;
     }
-
 }
+
