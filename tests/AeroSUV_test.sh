@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ---- CONFIGURATION ----
-CASE_DIR="../../../src/Openfoam/AeroSUV_case"
+CASE_DIR="../src/Openfoam/AeroSUV_case"
 LOG_DIR="log"
 MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
@@ -46,8 +46,7 @@ echo "🧼 Cleaning old mesh and logs..."
 rm -rf constant/polyMesh processor* postProcessing ${LOG_DIR} 2>/dev/null || true
 mkdir -p ${LOG_DIR}
 
-
-
+echo "📦 Generating openfoam mesh scripts..."
 # Sanity checks
 check_file_exists "system/blockMeshDict"
 check_file_exists "system/snappyHexMeshDict"
@@ -59,6 +58,13 @@ surfaceTransformPoints \
   -scale "(0.001 0.001 0.001)" \
   constant/triSurface/Geometry/frontWheels/17_wheels-front.stl \
   constant/triSurface/Geometry/frontWheels/17_wheels-front_scaled.stl
+
+# Make sure the Python script is executable or specify interpreter
+python3 ../../../src/runners/meshGeneration.py || {
+  echo "❌ Python script meshGeneration.py failed"
+  exit 1
+}
+
 
 
 # Mesh Generation Steps

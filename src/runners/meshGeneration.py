@@ -25,6 +25,9 @@ config = IO_fcts.load_config(CONFIG_PATH)
 bbox_out_path = config["filePath"]["boundingBoxGeneration_res"]
 blockMesh_path = config["filePath"]["blockMesh"]
 cell_counts = tuple(config.get("cell_counts", (20, 20, 20)))
+geometry_path = config["filePath"]["geometry"]
+extract_angle = config["surfaceFeatureExtractDict"]["extractAngle"]
+dict_output_path = config["filePath"]["surfaceFeatureExtractDict"]
 
 
 
@@ -47,6 +50,7 @@ IO_fcts.save_vertices(vertices, bbox_out_path)
 
 print(f'verticies saved to: {bbox_out_path}')
 print(f'starting population of blockMeshDict...')
+cell_counts = suppl_fcts.estimate_cell_counts(vertices, base_cell_size=0.05)
 
 blockMesh_content = populator_fcts.generate_blockMeshDict(vertices, cell_counts)
 with open(blockMesh_path, "w") as f:
@@ -54,8 +58,17 @@ with open(blockMesh_path, "w") as f:
 
 print(f"Generated blockMeshDict at {blockMesh_path}")
 
+print(f"generating surfaceFeatureExctractDict")
+# Generate dict content
+sfe_dict = generate_surfaceFeatureExtractDict(geometry_path, extract_angle)
 
-print('boundingBoxGeneration.py complete')
+# Write to file
+with open(dict_output_path, "w") as f:
+    f.write(sfe_dict)
+
+
+
+print('meshGeneration.py complete')
 
 
 

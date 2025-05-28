@@ -70,6 +70,7 @@ From: ubuntu:22.04
         echo "Creating Conda environment mclaren-newenv..."
         conda create -n mclaren-newenv -c conda-forge \
             mpich \
+            numpy-stl\
             mpi4py \
             "hdf5=*=mpi*" \
             "h5py=*=mpi*" \

@@ -5,6 +5,8 @@ filePath:
 
   blockMesh: "../Openfoam/AeroSUV_case/system/blockMeshDict"
 
+  surfaceFeatureExtractDict: "../Openfoam/AeroSUV_case/system/surfaceFeatureExctractDict"
+
 
 scaling:
   front: 5.0     # x- direction, in front
@@ -12,3 +14,6 @@ scaling:
   side: 5.0      # y+ and y- side padding
   top: 5.0       # z+ direction, above
 
+surfaceFeatureExtractDict:
+
+  extractAngle: 30 
