@@ -1,0 +1,14 @@
+filePath:
+  geometry: "../Openfoam/AeroSUV_case/constant/triSurface/Geometry/frontWheels/17_wheels-front_scaled.stl"
+
+  boundingBoxGeneration_res: "../Openfoam/AeroSUV_case/constant/polyMesh/boundingBoxVertices.json"
+
+  blockMesh: "../Openfoam/AeroSUV_case/system/blockMeshDict"
+
+
+scaling:
+  front: 5.0     # x- direction, in front
+  back: 10.0     # x+ direction, behind
+  side: 5.0      # y+ and y- side padding
+  top: 5.0       # z+ direction, above
+
