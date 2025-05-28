@@ -1,8 +1,8 @@
 #!/bin/bash
-set -euo pipefail
+set -eo pipefail
 
 # ---- CONFIGURATION ----
-CASE_DIR="../src/Openfoam/AeroSUV_case"
+CASE_DIR="../../src/Openfoam/AeroSUV_case"
 LOG_DIR="log"
 MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
@@ -41,12 +41,16 @@ function run_step() {
 
 echo "🔧 Moving to case directory: $CASE_DIR"
 cd "$CASE_DIR"
+# Load OpenFOAM environment (if not already in shell config)
+source $FOAM_BASH  # or use full path if needed
 
 echo "🧼 Cleaning old mesh and logs..."
 rm -rf constant/polyMesh processor* postProcessing ${LOG_DIR} 2>/dev/null || true
 mkdir -p ${LOG_DIR}
 
 echo "📦 Generating openfoam mesh scripts..."
+
+
 # Sanity checks
 check_file_exists "system/blockMeshDict"
 check_file_exists "system/snappyHexMeshDict"
@@ -60,7 +64,7 @@ surfaceTransformPoints \
   constant/triSurface/Geometry/frontWheels/17_wheels-front_scaled.stl
 
 # Make sure the Python script is executable or specify interpreter
-python3 ../../../src/runners/meshGeneration.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/runners/meshGeneration.py || {
   echo "❌ Python script meshGeneration.py failed"
   exit 1
 }

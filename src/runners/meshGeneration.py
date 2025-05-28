@@ -60,7 +60,7 @@ print(f"Generated blockMeshDict at {blockMesh_path}")
 
 print(f"generating surfaceFeatureExctractDict")
 # Generate dict content
-sfe_dict = generate_surfaceFeatureExtractDict(geometry_path, extract_angle)
+sfe_dict = populator_fcts.generate_surfaceFeatureExtractDict(geometry_path, extract_angle)
 
 # Write to file
 with open(dict_output_path, "w") as f:

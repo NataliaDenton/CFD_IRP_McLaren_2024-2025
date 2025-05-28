@@ -1,4 +1,4 @@
-
+import os
 
 def generate_blockMeshDict(vertices: list[list[float]], cell_counts) -> str:
     """
@@ -50,7 +50,7 @@ mergePatchPairs ();
 """
     return content
 
-def generate_surfaceFeatureExtractDict(file, extractAngle):
+def generate_surfaceFeatureExtractDict(geometry_path, extractAngle):
    
     geometry_filename = os.path.basename(geometry_path)
 
@@ -71,7 +71,7 @@ extractFromSurfaceCoeffs
     file    "{geometry_filename}";
 
     // Angle to detect sharp edges, degrees
-    extractAngle    {extract_angle};
+    extractAngle    {extractAngle};
 }}
 
 writeObjFeatures    yes;

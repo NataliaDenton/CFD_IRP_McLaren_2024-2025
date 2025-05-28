@@ -37,3 +37,12 @@ def print_vertices_block(vertices):
         print(f"    ({v[0]:.6f} {v[1]:.6f} {v[2]:.6f})")
     print(");")
 
+
+def estimate_cell_counts(vertices: list[list[float]], base_cell_size=0.1) -> tuple[int, int, int]:
+    """Estimate cell counts from bounding box vertex spread and desired base cell size."""
+    arr = np.array(vertices)
+    min_corner = arr.min(axis=0)
+    max_corner = arr.max(axis=0)
+    lengths = max_corner - min_corner
+    return tuple(int(np.ceil(l / base_cell_size)) for l in lengths)
+

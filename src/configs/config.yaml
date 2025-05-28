@@ -1,11 +1,11 @@
 filePath:
-  geometry: "../Openfoam/AeroSUV_case/constant/triSurface/Geometry/frontWheels/17_wheels-front_scaled.stl"
+  geometry: "constant/triSurface/Geometry/frontWheels/17_wheels-front_scaled.stl"
 
-  boundingBoxGeneration_res: "../Openfoam/AeroSUV_case/constant/polyMesh/boundingBoxVertices.json"
+  boundingBoxGeneration_res: "constant/polyMesh/boundingBoxVertices.json"
 
-  blockMesh: "../Openfoam/AeroSUV_case/system/blockMeshDict"
+  blockMesh: "system/blockMeshDict"
 
-  surfaceFeatureExtractDict: "../Openfoam/AeroSUV_case/system/surfaceFeatureExctractDict"
+  surfaceFeatureExtractDict: "system/surfaceFeatureExctractDict"
 
 
 scaling:
