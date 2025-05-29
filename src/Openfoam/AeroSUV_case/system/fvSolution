@@ -23,8 +23,8 @@ solvers
 p
     {
         solver          GAMG;
-        tolerance       1e-6;
-        relTol          0.1;
+        tolerance       1e-10;
+        relTol          1e-20;
         smoother        GaussSeidel;
         nPreSweeps      0;
         nPostSweeps     2;
@@ -38,24 +38,24 @@ p
     {
         solver          smoothSolver;
         smoother        symGaussSeidel;
-        tolerance       1e-5;
-        relTol          0.1;
+        tolerance       1e8;
+        relTol          1e-20;
     }
 
     k
     {
         solver          smoothSolver;
         smoother        symGaussSeidel;
-        tolerance       1e-5;
-        relTol          0.1;
+        tolerance       1e-8;
+        relTol          1e-20;
     }
 
     epsilon
     {
         solver          smoothSolver;
         smoother        symGaussSeidel;
-        tolerance       1e-5;
-        relTol          0.1;
+        tolerance       1e-8;
+        relTol          1e-20;
     }
 }
 

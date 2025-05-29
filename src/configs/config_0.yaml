@@ -1,0 +1,123 @@
+filePath:
+  caseDir: "../Openfoam/AeroSUV_case"
+
+fields:
+  - U
+  - p
+  - k
+  - epsilon
+  - nut
+
+U:
+  dimensions: [0, 1, -1, 0, 0, 0, 0]
+  internalField: [0 , 0, 0]
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: [0 ,27 ,0 ]
+    outlet:
+      type: zeroGradient
+    bottom:
+      type: noSlip
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: noSlip
+
+
+p:
+  dimensions: [0, 2, -2, 0, 0, 0, 0]
+  internalField: 1.01325e5
+  boundaries:
+    inlet:
+      type: zeroGradient
+    outlet:
+      type: fixedValue
+      value: 1.01325e5
+    bottom:
+      type: zeroGradient
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: zeroGradient
+
+
+k:
+  dimensions: [0, 2, -2, 0, 0, 0, 0]
+  internalField: 2.69
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: 2.69
+    outlet:
+      type: zeroGradient
+    bottom:
+      type: kqRWallFunction
+      value: uniform 2.69
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    car_body:
+      type: kqRWallFunction
+      value: uniform 2.69
+
+
+
+epsilon:
+  dimensions: [0, 2, -3, 0, 0, 0, 0]
+  internalField: 7.45
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: 7.45
+    outlet:
+      type: zeroGradient
+    bottom:
+      type: epsilonWallFunction
+      value: uniform 7.45
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: epsilonWallFunction
+      value: uniform 0.745
+
+
+nut:
+  dimensions: [0, 2, -1, 0, 0, 0, 0]
+  internalField: 0.0908
+  boundaries:
+    inlet:
+      type: calculated
+      value: 0.0908
+    outlet:
+      type: calculated
+      value: 0.0908
+    bottom:
+      type: nutkWallFunction
+      value: uniform 0
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: nutkWallFunction
+      value: uniform 0
+
+

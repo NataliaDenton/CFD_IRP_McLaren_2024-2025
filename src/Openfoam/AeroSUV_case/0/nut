@@ -1,10 +1,11 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
-| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  2312                                  |
-|   \\  /    A nd           | Website:  www.openfoam.com                      |
-|    \\/     M anipulation  |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version:  2312                                  |
+|   \  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
+
 FoamFile
 {
     version     2.0;
@@ -13,30 +14,49 @@ FoamFile
     location    "0";
     object      nut;
 }
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-dimensions      [0 2 -1 0 0 0 0]; // kinematic viscosity dimensions
+dimensions      [0 2 -1 0 0 0 0];
 
-internalField   uniform 1e-5; // initial guess for turbulent viscosity, tune as needed
+internalField   uniform 0.0908;
 
 boundaryField
 {
-    inlet
-    {
-        type            fixedValue;
-        value           uniform 1e-5;
-    }
-
-
-    outlet
+    FoamFile
     {
         type            zeroGradient;
     }
 
-    walls
+    inlet
+    {
+        type            calculated;
+        value           uniform 0.0908;
+    }
+
+    outlet
+    {
+        type            calculated;
+        value           uniform 0.0908;
+    }
+
+    bottom
     {
         type            nutkWallFunction;
         value           uniform 0;
+    }
+
+    top
+    {
+        type            symmetryPlane;
+    }
+
+    front
+    {
+        type            symmetryPlane;
+    }
+
+    back
+    {
+        type            symmetryPlane;
     }
 
     Geometry
@@ -44,5 +64,5 @@ boundaryField
         type            nutkWallFunction;
         value           uniform 0;
     }
-}
 
+}

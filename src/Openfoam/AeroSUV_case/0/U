@@ -1,11 +1,10 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
-| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  2312                                  |
-|   \\  /    A nd           | Website:  www.openfoam.com                      |
-|    \\/     M anipulation  |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version:  2312                                  |
+|   \  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
-
 
 FoamFile
 {
@@ -16,30 +15,53 @@ FoamFile
     object      U;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-
 dimensions      [0 1 -1 0 0 0 0];
-internalField   uniform (1 0 0);
+
+internalField   uniform (0 0 0);
+
 boundaryField
 {
+    FoamFile
+    {
+        type            zeroGradient;
+    }
+
     inlet
     {
         type            fixedValue;
-        value           uniform (31.3 0 0);
+        value           uniform (0 27 0);
     }
+
     outlet
     {
         type            zeroGradient;
     }
-    walls
+
+    bottom
     {
-        type            noSlip;
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+
+    top
+    {
+        type            symmetryPlane;
+    }
+
+    front
+    {
+        type            symmetryPlane;
+    }
+
+    back
+    {
+        type            symmetryPlane;
     }
 
     Geometry
     {
-        type            zeroGradient;
+        type            fixedValue;
+        value           uniform (0 0 0);
     }
 
 }

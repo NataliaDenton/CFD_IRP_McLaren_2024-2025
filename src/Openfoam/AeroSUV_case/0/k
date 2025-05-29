@@ -1,9 +1,9 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
-| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  2312                                  |
-|   \\  /    A nd           | Website:  www.openfoam.com                      |
-|    \\/     M anipulation  |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version:  2312                                  |
+|   \  /    A nd           | Website:  www.openfoam.com                      |
+|    \/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
 
 FoamFile
@@ -15,20 +15,21 @@ FoamFile
     object      k;
 }
 
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-
 dimensions      [0 2 -2 0 0 0 0];
 
-internalField   uniform 0.0367;
+internalField   uniform 2.69;
 
 boundaryField
 {
+    FoamFile
+    {
+        type            zeroGradient;
+    }
+
     inlet
     {
         type            fixedValue;
-        value           uniform 0.0367;
+        value           uniform 2.69;
     }
 
     outlet
@@ -36,10 +37,25 @@ boundaryField
         type            zeroGradient;
     }
 
-    walls
+    bottom
     {
         type            kqRWallFunction;
-        value           uniform 0.0367;
+        value           uniform 2.69;
+    }
+
+    top
+    {
+        type            symmetryPlane;
+    }
+
+    front
+    {
+        type            symmetryPlane;
+    }
+
+    back
+    {
+        type            symmetryPlane;
     }
 
     Geometry
@@ -48,4 +64,3 @@ boundaryField
     }
 
 }
-

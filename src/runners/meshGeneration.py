@@ -24,7 +24,7 @@ config = IO_fcts.load_config(CONFIG_PATH)
 # Get output paths from config
 bbox_out_path = config["filePath"]["boundingBoxGeneration_res"]
 blockMesh_path = config["filePath"]["blockMesh"]
-cell_counts = tuple(config.get("cell_counts", (20, 20, 20)))
+cell_counts = tuple(config.get("cell_counts", (200, 200, 200)))
 geometry_path = config["filePath"]["geometry"]
 extract_angle = config["surfaceFeatureExtractDict"]["extractAngle"]
 dict_output_path = config["filePath"]["surfaceFeatureExtractDict"]

@@ -2,12 +2,14 @@
 set -eo pipefail
 
 # ---- CONFIGURATION ----
-CASE_DIR="../../src/Openfoam/AeroSUV_case"
+CASE_DIR="../src/Openfoam/AeroSUV_case"
 LOG_DIR="log"
 MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
 POTENTIAL_LOG="${LOG_DIR}/potentialFoam.log"
 SOLVER_LOG="${LOG_DIR}/simpleFoam.log"
+
+
 
 # ---- FUNCTIONS ----
 
@@ -71,16 +73,30 @@ singularity exec ../../../containers/container.sif python3 ../../../src/runners/
 
 
 
+
 # Mesh Generation Steps
 run_step "Running blockMesh" "blockMesh" "${MESH_LOG}"
 run_step "Running surfaceFeatureExtract" "surfaceFeatureExtract" "${LOG_DIR}/surfaceFeatureExtract.log"
 run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
 
+
+# running the initial conditions creator 
+singularity exec ../../../containers/container.sif python3 ../../../src/runners/0.py || {
+  echo "❌ Python script 0.py failed"
+  exit 1
+}
 # Optional: potentialFoam initialization
 #run_step "Running potentialFoam" "potentialFoam" "${POTENTIAL_LOG}"
 
 # Main Solver
 run_step "Running simpleFoam" "simpleFoam" "${SOLVER_LOG}"
 
+foamToVTK
+
+
+
+
 echo "🎉 Simulation complete! Logs saved in '${LOG_DIR}'"
+
+
 
