@@ -35,3 +35,7 @@ def load_vertices(json_path: str) -> np.ndarray:
         data = json.load(f)
     return np.array(data["vertices"])
 
+def write_text_file(content: str, filepath: str):
+    with open(filepath, "w") as f:
+        f.write(content)
+

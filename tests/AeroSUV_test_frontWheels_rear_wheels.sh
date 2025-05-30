@@ -2,7 +2,7 @@
 set -eo pipefail
 
 # ---- CONFIGURATION ----
-CASE_DIR="../src/Openfoam/AeroSUV_frontWheels_case"
+CASE_DIR="../src/Openfoam/AeroSUV_frontWheels_rearWheels_case"
 LOG_DIR="log"
 MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
@@ -65,6 +65,11 @@ surfaceTransformPoints \
   constant/triSurface/Geometry/frontWheels/17_wheels-front.stl \
   constant/triSurface/Geometry/frontWheels/17_wheels-front_scaled.stl
 
+surfaceTransformPoints \
+  -scale "(0.001 0.001 0.001)" \
+  constant/triSurface/Geometry/rearWheels/18_wheels-rear.stl \
+  constant/triSurface/Geometry/rearWheels/18_wheels-rear_scaled.stl
+
 # Make sure the Python script is executable or specify interpreter
 singularity exec ../../../containers/container.sif python3 ../../../src/runners/meshGeneration.py || {
   echo "❌ Python script meshGeneration.py failed"
@@ -72,12 +77,16 @@ singularity exec ../../../containers/container.sif python3 ../../../src/runners/
 }
 
 singularity exec ../../../containers/container.sif python3 ../../../src/runners/constant.py || {
-  echo "❌ Python script meshGeneration.py failed"
+  echo "❌ Python script constant.py failed"
   exit 1
 }
 
+mkdir -p constant/triSurface/mergedGeometry
+cp constant/triSurface/Geometry/combined/merged_allGeometries.stl constant/triSurface/mergedGeometry/
+
+
 singularity exec ../../../containers/container.sif python3 ../../../src/runners/system.py || {
-  echo "❌ Python script meshGeneration.py failed"
+  echo "❌ Python script system.py failed"
   exit 1
 }
 

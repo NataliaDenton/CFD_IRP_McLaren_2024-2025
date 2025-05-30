@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
-"""
-Generate OpenFOAM bounding box from STL using a hardcoded config.
-"""
 
 import sys
 from pathlib import Path
 
-# Add '../../functions/' to sys.path
 FUNCTIONS_PATH = Path(__file__).resolve().parent / "../functions"
 sys.path.append(str(FUNCTIONS_PATH))
 
@@ -14,61 +10,72 @@ import IO_fcts
 import suppl_fcts
 import populator_fcts
 
-# --- Hardcoded YAML path ---
-CONFIG_PATH = Path(__file__).parent / "../configs/config.yaml"
+CONFIG_PATH = Path(__file__).parent / "../configs/Aero_SUV_frontWheels_rearWheels/config.yaml"
 
-
-print('Starting bounding box generation. Loading configs...')
-
+print('🔧 Starting bounding box generation. Loading configs...')
 config = IO_fcts.load_config(CONFIG_PATH)
-# Get output paths from config
+
+# --- Extract config values ---
 bbox_out_path = config["filePath"]["boundingBoxGeneration_res"]
 blockMesh_path = config["filePath"]["blockMesh"]
-cell_counts = tuple(config.get("cell_counts", (200, 200, 200)))
-geometry_path = config["filePath"]["geometry"]
-extract_angle = config["surfaceFeatureExtractDict"]["extractAngle"]
+included_angle = config["surfaceFeatureExtractDict"]["includedAngle"]
 dict_output_path = config["filePath"]["surfaceFeatureExtractDict"]
+geometry_config = config["filePath"]["geometries"]
+
+print('✅ Config load success. Loading geometries...')
+
+# --- Merge geometries into single STL ---
+merged_stl_output = Path("constant/triSurface/Geometry/combined/merged_allGeometries.stl")
+merged_stl_output.parent.mkdir(parents=True, exist_ok=True)
+
+suppl_fcts.merge_multiple_stl_files(geometry_config, merged_stl_output)
+
+# Replace geometry_config with single merged entry
+geometry_config = {
+    "mergedGeometry": {
+        "file": str(merged_stl_output),
+        "name": "mergedGeometry",
+        "refinementLevel": [2, 3]
+    }
+}
+
+
+# --- Aggregate all STL points ---
+all_points = []
+for name, geo_info in geometry_config.items():
+    print(f'📦 Loading geometry: {name}')
+    stl_points = IO_fcts.load_geometry(geo_info["file"])  # A new helper that loads one STL
+    all_points.extend(stl_points)
 
 
 
-print('Config load succsess. Loading Geometry...')
+print('✅ All geometries loaded. Computing bounding box...')
 
-points = IO_fcts.load_geometry(config["filePath"]["geometry"])
-
-print('Geometry Load success, computing bounds...')
-
-bounds = suppl_fcts.compute_extended_bounds(points, config["scaling"])
-
-print('bounds computed successfully. Formatting verticies...')
-
+# --- Compute bounds and mesh vertices ---
+bounds = suppl_fcts.compute_extended_bounds(all_points, config["scaling"])
 vertices = suppl_fcts.format_vertices(bounds)
 suppl_fcts.print_vertices_block(vertices)
 
-print('verticies formatted successfully. Saving...')
-
+print('💾 Saving vertices...')
 IO_fcts.save_vertices(vertices, bbox_out_path)
+print(f'✅ Vertices saved to: {bbox_out_path}')
 
-print(f'verticies saved to: {bbox_out_path}')
-print(f'starting population of blockMeshDict...')
+print('📐 Estimating cell counts and generating blockMeshDict...')
 cell_counts = suppl_fcts.estimate_cell_counts(vertices, base_cell_size=0.05)
-
 blockMesh_content = populator_fcts.generate_blockMeshDict(vertices, cell_counts)
+
 with open(blockMesh_path, "w") as f:
     f.write(blockMesh_content)
+print(f"✅ Generated blockMeshDict at {blockMesh_path}")
 
-print(f"Generated blockMeshDict at {blockMesh_path}")
+print(f"🧩 Generating surfaceFeatureExtractDict...")
 
-print(f"generating surfaceFeatureExctractDict")
-# Generate dict content
-sfe_dict = populator_fcts.generate_surfaceFeatureExtractDict(geometry_path, extract_angle)
+# Support feature extract for multiple geometries
+feature_dict = populator_fcts.generate_surfaceFeatureExtractDict(geometry_config, included_angle)
 
-# Write to file
 with open(dict_output_path, "w") as f:
-    f.write(sfe_dict)
+    f.write(feature_dict)
+print(f"✅ Wrote surfaceFeatureExtractDict to {dict_output_path}")
 
-
-
-print('meshGeneration.py complete')
-
-
+print('✅ meshGeneration.py complete')
 

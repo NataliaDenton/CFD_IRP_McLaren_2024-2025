@@ -1,6 +1,31 @@
 # suppl_fcts.py
 import numpy as np
 
+
+from stl import mesh
+import numpy as np
+from pathlib import Path
+
+def merge_multiple_stl_files(geometry_config, output_path):
+    """Merge multiple STL files listed in geometry_config into a single STL."""
+    combined_data = []
+
+    for name, info in geometry_config.items():
+        stl_path = Path(info["file"])
+        if not stl_path.exists():
+            raise FileNotFoundError(f"STL file for '{name}' not found: {stl_path}")
+        print(f"🔗 Adding STL to merge: {stl_path}")
+        part = mesh.Mesh.from_file(str(stl_path))
+        combined_data.append(part.data.copy())
+
+    # Concatenate all data arrays
+    all_data = np.concatenate(combined_data)
+    combined_mesh = mesh.Mesh(all_data.copy())
+    combined_mesh.save(str(output_path))
+    print(f"✅ Merged STL written to: {output_path}")
+
+
+
 def compute_extended_bounds(points, scale):
     """Compute bounding box based on scale factors."""
     min_bounds = np.min(points, axis=0)
@@ -45,4 +70,8 @@ def estimate_cell_counts(vertices: list[list[float]], base_cell_size=0.1) -> tup
     max_corner = arr.max(axis=0)
     lengths = max_corner - min_corner
     return tuple(int(np.ceil(l / base_cell_size)) for l in lengths)
+
+
+
+
 

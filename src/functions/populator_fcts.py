@@ -53,11 +53,38 @@ mergePatchPairs ();
 """
     return content
 
-def generate_surfaceFeatureExtractDict(geometry_path, extractAngle):
-   
-    geometry_filename = os.path.basename(geometry_path)
+def generate_surfaceFeatureExtractDict(geometry_dict, included_angle):
+    surface_entries = []
 
-    content = f"""\
+    for name, info in geometry_dict.items():
+        geometry_path = info["file"]
+        geometry_filename = os.path.basename(geometry_path)
+
+        entry = f"""\
+        {name}
+        {{
+            extractionMethod    extractFromSurface;
+
+            extractFromSurfaceCoeffs
+            {{
+                file            "Geometry/combined/merged_allGeometries.stl";
+                includedAngle   {included_angle};
+            }}
+
+            writeObjFeatures    yes;
+        }}"""
+        surface_entries.append(entry)
+
+    surfaces_block = "surfaces\n{\n" + "\n\n".join(surface_entries) + "\n}\n"
+
+    return f"""/*--------------------------------*- C++ -*----------------------------------*\\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version: 2312                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\\*---------------------------------------------------------------------------*/
+
 FoamFile
 {{
     version     2.0;
@@ -66,22 +93,10 @@ FoamFile
     object      surfaceFeatureExtractDict;
 }}
 
-extractionMethod    extractFromSurface;
+// ************************************************************************* //
 
-extractFromSurfaceCoeffs
-{{
-    // Name of the STL file in constant/triSurface folder
-    file    "{geometry_filename}";
-
-    // Angle to detect sharp edges, degrees
-    extractAngle    {extractAngle};
-}}
-
-writeObjFeatures    yes;
-
+{surfaces_block}
 """
-    return content
-
 
 
 def write_field_file(field_name: str, config: dict, case_dir: str):
@@ -209,5 +224,358 @@ def write_all_fields(config_path: str, case_dir: str):
     for field in field_list:
         write_field_file(field, config, case_dir)
 
+def populate_transportProperties(config, case_dir):
+    with open(config, 'r') as f:
+        config = yaml.safe_load(f)
+    transport_config = config['fluid']
+    filepath = os.path.join(case_dir, 'constant', 'transportProperties')
 
+    lines = [
+        "/*--------------------------------*- C++ -*----------------------------------*\\",
+        "| =========                 |                                                 |",
+        "| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |",
+        "|  \\    /   O peration     | Version:  v2212 or later                         |",
+        "|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |",
+        "|    \\/     M anipulation  |                                                 |",
+        "\\*---------------------------------------------------------------------------*/",
+        "FoamFile",
+        "{",
+        "    version     2.0;",
+        "    format      ascii;",
+        "    class       dictionary;",
+        "    location    \"constant\";",
+        "    object      transportProperties;",
+        "}",
+        "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //",
+        f"transportModel  Newtonian;",
+        f"nu              [0 2 -1 0 0 0 0] {transport_config['nu']};",
+        "",
+        "// ************************************************************************* //"
+    ]
+
+    with open(filepath, 'w') as f:
+        f.write('\n'.join(lines))
+
+def populate_turbulenceProperties(config, case_dir):
+    with open(config, 'r') as f:
+        config = yaml.safe_load(f)
+    turb_config = config['turbulence']
+    filepath = os.path.join(case_dir, 'constant', 'turbulenceProperties')
+    turbulence_value = "on" if config['turbulence']['RAS']['turbulence'] == "on" else "off"
+    printCoeffs_value = "on" if config['turbulence']['RAS']['printCoeffs'] == "on" else "off"
+    lines = [
+        "/*--------------------------------*- C++ -*----------------------------------*\\",
+        "| =========                 |                                                 |",
+        "| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |",
+        "|  \\    /   O peration     | Version:  v2212 or later                         |",
+        "|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |",
+        "|    \\/     M anipulation  |                                                 |",
+        "\\*---------------------------------------------------------------------------*/",
+        "FoamFile",
+        "{",
+        "    version     2.0;",
+        "    format      ascii;",
+        "    class       dictionary;",
+        "    location    \"constant\";",
+        "    object      turbulenceProperties;",
+        "}",
+        "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //",
+        f"simulationType  {turb_config['simulationType']};",
+        "",
+        f"{turb_config['simulationType']}",
+        "{",
+        f"    RASModel        {turb_config['model']};",
+        f"    turbulence      {turbulence_value};",
+        f"    printCoeffs     {printCoeffs_value};",
+        "}",
+        "",
+        "// ************************************************************************* //"
+    ]
+
+    with open(filepath, 'w') as f:
+        f.write('\n'.join(lines))
+
+
+
+
+
+import os
+
+def generate_controlDict(control_params):
+    return f"""\
+FoamFile
+{{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}}
+
+application     {control_params.get("application", "snappyHexMesh")};
+startFrom       startTime;
+startTime       {control_params.get("startTime", 0)};
+stopAt          endTime;
+endTime         {control_params.get("endTime", 1)};
+deltaT          {control_params.get("deltaT", 1)};
+writeControl    timeStep;
+writeInterval   {control_params.get("writeInterval", 1)};
+purgeWrite      {control_params.get("purgeWrite", 0)};
+writeFormat     ascii;
+writePrecision  6;
+writeCompression off;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable yes;
+"""
+
+
+def generate_fvSchemes():
+    return """\
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+
+// Default discretisation schemes
+ddtSchemes
+{
+    default         steadyState;
+}
+
+gradSchemes
+{
+    default         Gauss linear;
+    grad(p)         Gauss linear;
+    grad(U)         Gauss linear;
+}
+
+divSchemes
+{
+    div(phi,U)           Gauss linearUpwind grad(U);
+    div(phi,k)           Gauss upwind;
+    div(phi,epsilon)     Gauss upwind;
+    div((nuEff*dev2(T(grad(U)))))  Gauss linear;
+}
+
+laplacianSchemes
+{
+    default         Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default         linear;
+}
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+fluxRequired
+{
+    default         no;
+    p;
+}
+"""
+
+def generate_fvSolution():
+    return """\
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+
+solvers
+{
+p
+    {
+        solver          GAMG;
+        tolerance       1e-10;
+        relTol          1e-20;
+        smoother        GaussSeidel;
+        nPreSweeps      0;
+        nPostSweeps     2;
+        cacheAgglomeration true;
+        aggressiveCoeffs 1;
+        mergeLevels     1;
+    }
+
+
+    U
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e8;
+        relTol          1e-20;
+    }
+
+    k
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-8;
+        relTol          1e-20;
+    }
+
+    epsilon
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-8;
+        relTol          1e-20;
+    }
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 0;
+    residualControl
+    {
+        p               1e-7;
+        U               1e-7;
+        "(k|epsilon)"   1e-8;
+    }
+}
+
+relaxationFactors
+{
+    fields
+    {
+        p               0.3;
+    }
+    equations
+    {
+        U               0.7;
+        k               0.7;
+        epsilon         0.7;
+    }
+}
+"""
+
+def generate_snappyHexMeshDict(shm_config, merged_stl_output):
+    # --- Overwrite geometry with merged STL if provided ---
+
+    print(f"merged Geometry file: {merged_stl_output}")
+    if merged_stl_output is not None:
+        shm_config["geometry"] = {
+            "mergedGeometry": {
+                "file": os.path.relpath(merged_stl_output, "constant/triSurface/mergedGeometry"),
+                "refinementLevel": [2, 3]
+            }
+        }
+
+    # --- Build geometry and refinement entries ---
+    geometry_entries = []
+    refinement_entries = []
+
+    for name, geo in shm_config["geometry"].items():
+        stl_file = os.path.basename(geo["file"])
+        refinement = geo["refinementLevel"]
+        geometry_entries.append(
+            f'    {name}\n    {{\n        type triSurfaceMesh;\n        file "{stl_file}";\n    }}'
+        )
+        refinement_entries.append(
+            f'    {name} {{ level ({refinement[0]} {refinement[1]}); }}'
+        )
+
+    geometry_block = "\n".join(geometry_entries)
+    refinement_block = "\n".join(refinement_entries)
+    
+    return f"""\
+FoamFile
+{{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}}
+
+castellatedMesh {str(shm_config.get("castellatedMesh", True)).lower()};
+snap            {str(shm_config.get("snap", True)).lower()};
+addLayers       {str(shm_config.get("addLayers", False)).lower()};
+
+geometry
+{{
+    Geometry
+    {{
+        type    triSurfaceMesh;
+        file    "Geometry/combined/merged_allGeometries.stl";
+    }}
+}}
+castellatedMeshControls
+{{
+    maxLocalCells 1000000;
+    maxGlobalCells 2000000;
+    minRefinementCells 10;
+    nCellsBetweenLevels 3;
+
+    features ();
+
+    refinementSurfaces
+    {{
+{refinement_block}
+    }}
+
+    resolveFeatureAngle 30;
+    refinementRegions {{}}
+    locationInMesh (0 0 0);
+    allowFreeStandingZoneFaces true;
+}}
+
+snapControls
+{{
+    nSmoothPatch 3;
+    tolerance 2.0;
+    nSolveIter 30;
+    nRelaxIter 5;
+}}
+
+addLayersControls
+{{
+    relativeSizes true;
+    layers {{}}
+    expansionRatio 1.0;
+    finalLayerThickness 0.3;
+    minThickness 0.1;
+    nGrow 0;
+    featureAngle 60;
+    nRelaxIter 3;
+    nSmoothSurfaceNormals 1;
+    nSmoothNormals 3;
+    nSmoothThickness 10;
+    maxFaceThicknessRatio 0.5;
+    maxThicknessToMedialRatio 0.3;
+    minMedianAxisAngle 90;
+    nBufferCellsNoExtrude 0;
+    nLayerIter 50;
+    nRelaxedIter 20;
+}}
+
+meshQualityControls {{
+    maxNonOrtho 65;
+    maxBoundarySkewness 20;
+    maxInternalSkewness 4;
+    maxConcave 80;
+    minVol 1e-13;
+    minTetQuality 1e-9;
+    minArea -1;
+    minTwist 0.02;
+    minDeterminant 0.001;
+    minFaceWeight 0.02;
+    minVolRatio 0.01;
+    minTriangleTwist -1;
+    nSmoothScale            4;
+    errorReduction          0.75;
+}}
+
+debug 0;
+mergeTolerance 1E-6;
+"""
 

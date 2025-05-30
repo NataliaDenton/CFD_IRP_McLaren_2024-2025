@@ -76,10 +76,7 @@ singularity exec ../../../containers/container.sif python3 ../../../src/runners/
   exit 1
 }
 
-singularity exec ../../../containers/container.sif python3 ../../../src/runners/system.py || {
-  echo "❌ Python script meshGeneration.py failed"
-  exit 1
-}
+
 
 # Mesh Generation Steps
 run_step "Running blockMesh" "blockMesh" "${MESH_LOG}"
