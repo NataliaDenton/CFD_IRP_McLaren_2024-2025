@@ -2,7 +2,7 @@
 set -eo pipefail
 
 # ---- CONFIGURATION ----
-CASE_DIR="../src/Openfoam/AeroSUV_frontWheels_rearWheels_case"
+CASE_DIR="../src/Openfoam/AeroSUV_rearWheels_case"
 LOG_DIR="log"
 MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
@@ -37,6 +37,13 @@ function run_step() {
     echo "✅ Finished: $description"
 }
 
+
+
+
+
+
+
+
 # ---- MAIN SCRIPT ----
 
 
@@ -60,15 +67,14 @@ check_file_exists "system/controlDict"
 check_directory_exists "constant/triSurface"
 
 echo "Scaling STL..."
-surfaceTransformPoints \
-  -scale "(0.001 0.001 0.001)" \
-  constant/triSurface/Geometry/frontWheels/17_wheels-front.stl \
-  constant/triSurface/Geometry/frontWheels/17_wheels-front_scaled.stl
 
 surfaceTransformPoints \
   -scale "(0.001 0.001 0.001)" \
-  constant/triSurface/Geometry/rearWheels/18_wheels-rear.stl \
-  constant/triSurface/Geometry/rearWheels/18_wheels-rear_scaled.stl
+  constant/triSurface/Geometry/17_wheels-front.stl \
+  constant/triSurface/Geometry/17_wheels-front_scaled.stl
+
+
+
 
 # Make sure the Python script is executable or specify interpreter
 singularity exec ../../../containers/container.sif python3 ../../../src/runners/meshGeneration.py || {
@@ -80,9 +86,6 @@ singularity exec ../../../containers/container.sif python3 ../../../src/runners/
   echo "❌ Python script constant.py failed"
   exit 1
 }
-
-mkdir -p constant/triSurface/mergedGeometry
-cp constant/triSurface/Geometry/combined/merged_allGeometries.stl constant/triSurface/mergedGeometry/
 
 
 singularity exec ../../../containers/container.sif python3 ../../../src/runners/system.py || {

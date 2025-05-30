@@ -1,0 +1,25 @@
+filePath:
+  controlDict: "system/controlDict"
+  fvSchemes: "system/fvSchemes"
+  fvSolution: "system/fvSolution"
+  snappyHexMeshDict: "system/snappyHexMeshDict"
+
+snappyHexMeshDict:
+  castellatedMesh: true
+  snap: true
+  addLayers: false
+  geometry:
+     rearWheels:
+      file: "constant/triSurface/Geometry/17_wheels-front_scaled.stl"
+      refinementLevel: [2, 3]
+
+control:
+  application: "snappyHexMesh"
+  startTime: 0
+  endTime: 1000
+  deltaT: 10
+  writeInterval: 100
+  purgeWrite: 0
+
+
+

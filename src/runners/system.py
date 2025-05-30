@@ -9,13 +9,10 @@ sys.path.append(str(FUNCTIONS_PATH))
 import IO_fcts
 import populator_fcts
 
-CONFIG_PATH = Path(__file__).parent / "../configs/Aero_SUV_frontWheels_rearWheels/config_system.yaml"
+CONFIG_PATH = Path(__file__).parent / "../configs/Aero_SUV_rearWheels/config_system.yaml"
 
 print("🔧 Starting system file generation...")
 config = IO_fcts.load_config(CONFIG_PATH)
-
-# Path to the merged geometry
-merged_stl_output = Path("constant/triSurface/Geometry/combined/merged_allGeometries.stl")
 
 
 # --- CONTROL DICT ---
@@ -33,13 +30,9 @@ fv_solution_text = populator_fcts.generate_fvSolution()
 IO_fcts.write_text_file(fv_solution_text, config["filePath"]["fvSolution"])
 print(f"fvSolution written to: {config['filePath']['fvSolution']}")
 
-# --- SNAPPY HEX MESH DICT ---
-if merged_stl_output.exists():
-    print("Detected merged STL geometry. Using for snappyHexMeshDict...")
-    snappy_text = populator_fcts.generate_snappyHexMeshDict(config["snappyHexMeshDict"], merged_stl_output)
-else:
-    print("Merged geometry not found! Using original geometry configuration from YAML.")
-    snappy_text = populator_fcts.generate_snappyHexMeshDict(config["snappyHexMeshDict"])
+
+print("Merged geometry not found! Using original geometry configuration from YAML.")
+snappy_text = populator_fcts.generate_snappyHexMeshDict(config["snappyHexMeshDict"])
 
 IO_fcts.write_text_file(snappy_text, config["filePath"]["snappyHexMeshDict"])
 print(f"snappyHexMeshDict written to: {config['filePath']['snappyHexMeshDict']}")

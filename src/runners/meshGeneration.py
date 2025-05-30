@@ -10,7 +10,7 @@ import IO_fcts
 import suppl_fcts
 import populator_fcts
 
-CONFIG_PATH = Path(__file__).parent / "../configs/Aero_SUV_frontWheels_rearWheels/config.yaml"
+CONFIG_PATH = Path(__file__).parent / "../configs/Aero_SUV_rearWheels/config.yaml"
 
 print('🔧 Starting bounding box generation. Loading configs...')
 config = IO_fcts.load_config(CONFIG_PATH)
@@ -18,27 +18,11 @@ config = IO_fcts.load_config(CONFIG_PATH)
 # --- Extract config values ---
 bbox_out_path = config["filePath"]["boundingBoxGeneration_res"]
 blockMesh_path = config["filePath"]["blockMesh"]
-included_angle = config["surfaceFeatureExtractDict"]["includedAngle"]
+extract_angle = config["surfaceFeatureExtractDict"]["extractAngle"]
 dict_output_path = config["filePath"]["surfaceFeatureExtractDict"]
 geometry_config = config["filePath"]["geometries"]
 
 print('✅ Config load success. Loading geometries...')
-
-# --- Merge geometries into single STL ---
-merged_stl_output = Path("constant/triSurface/Geometry/combined/merged_allGeometries.stl")
-merged_stl_output.parent.mkdir(parents=True, exist_ok=True)
-
-suppl_fcts.merge_multiple_stl_files(geometry_config, merged_stl_output)
-
-# Replace geometry_config with single merged entry
-geometry_config = {
-    "mergedGeometry": {
-        "file": str(merged_stl_output),
-        "name": "mergedGeometry",
-        "refinementLevel": [2, 3]
-    }
-}
-
 
 # --- Aggregate all STL points ---
 all_points = []
@@ -71,7 +55,7 @@ print(f"✅ Generated blockMeshDict at {blockMesh_path}")
 print(f"🧩 Generating surfaceFeatureExtractDict...")
 
 # Support feature extract for multiple geometries
-feature_dict = populator_fcts.generate_surfaceFeatureExtractDict(geometry_config, included_angle)
+feature_dict = populator_fcts.generate_surfaceFeatureExtractDict(geometry_config, extract_angle)
 
 with open(dict_output_path, "w") as f:
     f.write(feature_dict)

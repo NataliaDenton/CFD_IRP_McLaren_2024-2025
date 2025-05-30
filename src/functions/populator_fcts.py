@@ -53,7 +53,7 @@ mergePatchPairs ();
 """
     return content
 
-def generate_surfaceFeatureExtractDict(geometry_dict, included_angle):
+def generate_surfaceFeatureExtractDict(geometry_dict, extract_angle):
     surface_entries = []
 
     for name, info in geometry_dict.items():
@@ -67,8 +67,8 @@ def generate_surfaceFeatureExtractDict(geometry_dict, included_angle):
 
             extractFromSurfaceCoeffs
             {{
-                file            "Geometry/combined/merged_allGeometries.stl";
-                includedAngle   {included_angle};
+                file            "Geometry/{geometry_filename}";
+                extractAngle   {extract_angle};
             }}
 
             writeObjFeatures    yes;
@@ -459,18 +459,7 @@ relaxationFactors
 }
 """
 
-def generate_snappyHexMeshDict(shm_config, merged_stl_output):
-    # --- Overwrite geometry with merged STL if provided ---
-
-    print(f"merged Geometry file: {merged_stl_output}")
-    if merged_stl_output is not None:
-        shm_config["geometry"] = {
-            "mergedGeometry": {
-                "file": os.path.relpath(merged_stl_output, "constant/triSurface/mergedGeometry"),
-                "refinementLevel": [2, 3]
-            }
-        }
-
+def generate_snappyHexMeshDict(shm_config):
     # --- Build geometry and refinement entries ---
     geometry_entries = []
     refinement_entries = []
@@ -506,7 +495,7 @@ geometry
     Geometry
     {{
         type    triSurfaceMesh;
-        file    "Geometry/combined/merged_allGeometries.stl";
+        file    "Geometry/{stl_file}";
     }}
 }}
 castellatedMeshControls
