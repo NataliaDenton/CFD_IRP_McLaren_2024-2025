@@ -5,23 +5,21 @@ import numpy as np
 from stl import mesh
 import numpy as np
 from pathlib import Path
+import trimesh
 
 def merge_multiple_stl_files(geometry_config, output_path):
-    """Merge multiple STL files listed in geometry_config into a single STL."""
-    combined_data = []
+    combined_meshes = []
 
     for name, info in geometry_config.items():
         stl_path = Path(info["file"])
         if not stl_path.exists():
             raise FileNotFoundError(f"STL file for '{name}' not found: {stl_path}")
         print(f"🔗 Adding STL to merge: {stl_path}")
-        part = mesh.Mesh.from_file(str(stl_path))
-        combined_data.append(part.data.copy())
+        mesh_part = trimesh.load_mesh(str(stl_path), file_type='stl')
+        combined_meshes.append(mesh_part)
 
-    # Concatenate all data arrays
-    all_data = np.concatenate(combined_data)
-    combined_mesh = mesh.Mesh(all_data.copy())
-    combined_mesh.save(str(output_path))
+    merged = trimesh.util.concatenate(combined_meshes)
+    merged.export(output_path)
     print(f"✅ Merged STL written to: {output_path}")
 
 

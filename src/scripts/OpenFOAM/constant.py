@@ -10,8 +10,8 @@ sys.path.append(str(FUNCTIONS_PATH))
 import populator_fcts
 
 # --- Hardcoded path to config_0.yaml ---
-CONFIG_constant_PATH = Path(__file__).parent / "../../configs/Aero_SUV_rearWheels/config_constant.yaml"
-CASE_DIR = Path(__file__).parent / "../../Openfoam/AeroSUV_rearWheels_case"
+CONFIG_constant_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/config_constant.yaml"
+CASE_DIR = Path(__file__).parent / "../../Openfoam/AeroSUV_mergedGeom_case"
 print('starting population of transport properties')
 populator_fcts.populate_transportProperties(CONFIG_constant_PATH, CASE_DIR)
 print('starting population of turbulanceBroperties')

@@ -1,0 +1,12 @@
+fluid:
+  name: air
+  rho: 1.225           # [kg/m^3]
+  nu: 1.5e-5           # [m^2/s] (kinematic viscosity)
+
+turbulence:
+  simulationType: RAS
+  model: kEpsilon
+  RAS:
+    turbulence: on
+    printCoeffs: on
+

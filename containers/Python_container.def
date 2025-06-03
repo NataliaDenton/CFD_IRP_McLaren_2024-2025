@@ -17,8 +17,9 @@ From: ubuntu:22.04
     ###########################
     # Essential System Packages
     ###########################
-    apt-get update
-    apt-get install -y software-properties-common
+    apt-get update && apt-get install -y software-properties-common
+
+    DEBIAN_FRONTEND=noninteractive
 
     for pkg in \
         mpich \
@@ -45,7 +46,7 @@ From: ubuntu:22.04
     done
 
     ###########################
-    # Install Anaconda (if needed)
+    # Install Anaconda
     ###########################
     if [ ! -d "/opt/conda" ]; then
         echo "Installing Anaconda..."
@@ -54,6 +55,7 @@ From: ubuntu:22.04
         wget https://repo.anaconda.com/archive/Anaconda3-2024.10-1-Linux-x86_64.sh
         chmod +x Anaconda3-2024.10-1-Linux-x86_64.sh
         ./Anaconda3-2024.10-1-Linux-x86_64.sh -b -p /opt/conda
+        rm -f Anaconda3-2024.10-1-Linux-x86_64.sh
     else
         echo "Anaconda already installed, skipping."
     fi
@@ -63,14 +65,15 @@ From: ubuntu:22.04
     ###########################
     export PATH="/opt/conda/bin:$PATH"
     . /opt/conda/etc/profile.d/conda.sh
+    conda init bash
     conda config --set always_yes yes --set changeps1 no
-    conda update -n base -c defaults conda --yes
+    conda update -n base -c defaults conda
 
     if ! conda info --envs | grep -q "mclaren-newenv"; then
         echo "Creating Conda environment mclaren-newenv..."
         conda create -n mclaren-newenv -c conda-forge \
             mpich \
-            numpy-stl\
+            numpy-stl \
             mpi4py \
             "hdf5=*=mpi*" \
             "h5py=*=mpi*" \
@@ -89,23 +92,33 @@ From: ubuntu:22.04
     fi
 
     ###########################
-    # Install OpenFOAM Python packages and PyFoam via pip
+    # Install additional Python packages via pip
     ###########################
     . /opt/conda/etc/profile.d/conda.sh
     conda activate mclaren-newenv
 
-    # Install openfoamparser-ilya via pip
+    pip install --upgrade pip
+
+    # Install trimesh
+    if ! python -c "import trimesh" &>/dev/null; then
+        echo "Installing trimesh..."
+        pip install --upgrade trimesh
+    else
+        echo "trimesh already installed, skipping."
+    fi
+
+    # Install openfoamparser-ilya
     if ! python -c "import openfoamparser" &>/dev/null; then
-        echo "Installing openfoamparser-ilya via pip..."
+        echo "Installing openfoamparser-ilya..."
         pip install --upgrade openfoamparser-ilya
     else
         echo "openfoamparser-ilya already installed, skipping."
     fi
 
-
+    # Install PyFoam
     if ! python -c "import PyFoam" &>/dev/null; then
         echo "Installing PyFoam..."
-        pip install --upgrade --quiet PyFoam
+        pip install --upgrade PyFoam
     else
         echo "PyFoam already installed, skipping."
     fi

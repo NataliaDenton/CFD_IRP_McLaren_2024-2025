@@ -10,7 +10,7 @@ import IO_fcts
 import suppl_fcts
 import populator_fcts
 
-CONFIG_PATH = Path(__file__).parent / "../../configs/Aero_SUV_rearWheels/config.yaml"
+CONFIG_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/config.yaml"
 
 print('🔧 Starting bounding box generation. Loading configs...')
 config = IO_fcts.load_config(CONFIG_PATH)
@@ -20,7 +20,7 @@ bbox_out_path = config["filePath"]["boundingBoxGeneration_res"]
 blockMesh_path = config["filePath"]["blockMesh"]
 extract_angle = config["surfaceFeatureExtractDict"]["extractAngle"]
 dict_output_path = config["filePath"]["surfaceFeatureExtractDict"]
-geometry_config = config["filePath"]["geometries"]
+geometry_config = config["filePath"]["mergedGeometry"]
 
 print('✅ Config load success. Loading geometries...')
 

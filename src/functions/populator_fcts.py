@@ -317,140 +317,144 @@ timePrecision   6;
 runTimeModifiable yes;
 """
 
-
-def generate_fvSchemes():
-    return """\
+def generate_fvSchemes(config):
+    return f"""\
 FoamFile
-{
+{{
     version     2.0;
     format      ascii;
     class       dictionary;
     object      fvSchemes;
-}
+}}
 
 // Default discretisation schemes
 ddtSchemes
-{
-    default         steadyState;
-}
+{{
+    default         {config["ddtSchemes"]["default"]};
+}}
 
 gradSchemes
-{
-    default         Gauss linear;
-    grad(p)         Gauss linear;
-    grad(U)         Gauss linear;
-}
+{{
+    default         {config["gradSchemes"]["default"]};
+    grad(p)         {config["gradSchemes"]["grad(p)"]};
+    grad(U)         {config["gradSchemes"]["grad(U)"]};
+}}
 
 divSchemes
-{
-    div(phi,U)           Gauss linearUpwind grad(U);
-    div(phi,k)           Gauss upwind;
-    div(phi,epsilon)     Gauss upwind;
-    div((nuEff*dev2(T(grad(U)))))  Gauss linear;
-}
+{{
+    div(phi,U)                      {config["divSchemes"]["div(phi,U)"]};
+    div(phi,k)                      {config["divSchemes"]["div(phi,k)"]};
+    div(phi,epsilon)               {config["divSchemes"]["div(phi,epsilon)"]};
+    div((nuEff*dev2(T(grad(U)))))  {config["divSchemes"]["div((nuEff*dev2(T(grad(U)))))"]};
+}}
 
 laplacianSchemes
-{
-    default         Gauss linear corrected;
-}
+{{
+    default         {config["laplacianSchemes"]["default"]};
+}}
 
 interpolationSchemes
-{
-    default         linear;
-}
+{{
+    default         {config["interpolationSchemes"]["default"]};
+}}
 
 snGradSchemes
-{
-    default         corrected;
-}
+{{
+    default         {config["snGradSchemes"]["default"]};
+}}
 
 fluxRequired
-{
-    default         no;
+{{
+    default         {config["fluxRequired"]["default"]};
     p;
-}
+}}
 """
+def generate_fvSolution(config):
 
-def generate_fvSolution():
-    return """\
+    cacheAgglomeration = "on" if config['solvers']['p']['cacheAgglomeration'] == True else "off"
+    return f"""\
 FoamFile
-{
+{{
     version     2.0;
     format      ascii;
     class       dictionary;
     object      fvSolution;
-}
+}}
 
 solvers
-{
-p
-    {
-        solver          GAMG;
-        tolerance       1e-10;
-        relTol          1e-20;
-        smoother        GaussSeidel;
-        nPreSweeps      0;
-        nPostSweeps     2;
-        cacheAgglomeration true;
-        nCellsInCoarsestLevel 10;
-        aggressiveCoeffs 1;
-        agglomerator     faceAreaPair;
-        mergeLevels     1;
-    }
-
+{{
+    p
+    {{
+        solver          {config["solvers"]["p"]["solver"]};
+        tolerance       {config["solvers"]["p"]["tolerance"]};
+        relTol          {config["solvers"]["p"]["relTol"]};
+        smoother        {config["solvers"]["p"]["smoother"]};
+        nPreSweeps      {config["solvers"]["p"]["nPreSweeps"]};
+        nPostSweeps     {config["solvers"]["p"]["nPostSweeps"]};
+        cacheAgglomeration {cacheAgglomeration};
+        nCellsInCoarsestLevel {config["solvers"]["p"]["nCellsInCoarsestLevel"]};
+        aggressiveCoeffs {config["solvers"]["p"]["aggressiveCoeffs"]};
+        agglomerator {config["solvers"]["p"]["agglomerator"]};
+        mergeLevels {config["solvers"]["p"]["mergeLevels"]};
+        
+    }}
 
     U
-    {
-        solver          smoothSolver;
-        smoother        symGaussSeidel;
-        tolerance       1e8;
-        relTol          1e-20;
-    }
+    {{
+        solver          {config["solvers"]["U"]["solver"]};
+        tolerance       {config["solvers"]["U"]["tolerance"]};
+        relTol          {config["solvers"]["U"]["relTol"]};
+        smoother        {config["solvers"]["U"]["smoother"]};
+    }}
 
     k
-    {
-        solver          smoothSolver;
-        smoother        symGaussSeidel;
-        tolerance       1e-8;
-        relTol          1e-20;
-    }
+    {{
+        solver          {config["solvers"]["k"]["solver"]};
+        tolerance       {config["solvers"]["k"]["tolerance"]};
+        relTol          {config["solvers"]["k"]["relTol"]};
+        smoother        {config["solvers"]["k"]["smoother"]};
+    }}
 
     epsilon
-    {
-        solver          smoothSolver;
-        smoother        symGaussSeidel;
-        tolerance       1e-8;
-        relTol          1e-20;
-    }
-}
+    {{
+        solver          {config["solvers"]["epsilon"]["solver"]};
+        tolerance       {config["solvers"]["epsilon"]["tolerance"]};
+        relTol          {config["solvers"]["epsilon"]["relTol"]};
+        smoother        {config["solvers"]["epsilon"]["smoother"]};
+    }}
+}}
 
 SIMPLE
-{
-    nNonOrthogonalCorrectors 0;
-    pRefPoint       (0 0 0);  // Physical coordinate point to fix pressure
-    pRefValue       0;
+{{
+    nNonOrthogonalCorrectors    {config["SIMPLE"]["nNonOrthogonalCorrectors"]};
+    pRefPoint                   {config["SIMPLE"]["pRefPoint"]};
+    pRefValue                   {config["SIMPLE"]["pRefValue"]};
+
     residualControl
-    {
-        p               1e-7;
-        U               1e-7;
-        "(k|epsilon)"   1e-8;
-    }
-}
+    {{
+        p               {config["SIMPLE"]["residualControl"]["p"]};
+        U               {config["SIMPLE"]["residualControl"]["U"]};
+        k               {config["SIMPLE"]["residualControl"]["k"]};
+        epsilon         {config["SIMPLE"]["residualControl"]["epsilon"]};
+    }}
+}}
 
 relaxationFactors
-{
+{{
     fields
-    {
-        p               0.3;
-    }
+    {{
+        p               {config["relaxationFactors"]["fields"]["p"]};
+    }}
+
     equations
-    {
-        U               0.7;
-        k               0.7;
-        epsilon         0.7;
-    }
-}
+    {{
+        U               {config["relaxationFactors"]["equations"]["U"]};
+        k               {config["relaxationFactors"]["equations"]["k"]};
+        epsilon         {config["relaxationFactors"]["equations"]["epsilon"]};
+    }}
+}}
 """
+
 
 def generate_snappyHexMeshDict(shm_config):
 

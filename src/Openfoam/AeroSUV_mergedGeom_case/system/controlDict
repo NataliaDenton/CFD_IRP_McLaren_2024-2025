@@ -1,0 +1,23 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+application     snappyHexMesh;
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         5000;
+deltaT          100;
+writeControl    timeStep;
+writeInterval   1;
+purgeWrite      51;
+writeFormat     ascii;
+writePrecision  6;
+writeCompression uncompressed;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable yes;

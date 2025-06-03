@@ -10,8 +10,8 @@ sys.path.append(str(FUNCTIONS_PATH))
 import populator_fcts
 
 # --- Hardcoded path to config_0.yaml ---
-CONFIG_0_PATH = Path(__file__).parent / "../../configs/Aero_SUV_rearWheels/config_0.yaml"
-CASE_DIR = Path(__file__).parent / "../../Openfoam/AeroSUV_rearWheels_case"
+CONFIG_0_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/config_0.yaml"
+CASE_DIR = Path(__file__).parent / "../../Openfoam/AeroSUV_mergedGeom_case"
 
 print("📦 Starting OpenFOAM '0/' population using config_0.yaml")
 populator_fcts.write_all_fields(str(CONFIG_0_PATH), str(CASE_DIR))

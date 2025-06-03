@@ -27,22 +27,6 @@ function check_directory_exists() {
     fi
 }
 
-function run_step() {
-    local description="$1"
-    local command="$2"
-    local log_file="$3"
-
-    echo "🔹 $description..."
-    $command > "$log_file" 2>&1
-    echo "✅ Finished: $description"
-}
-
-
-
-
-
-
-
 
 # ---- MAIN SCRIPT ----
 
@@ -94,16 +78,28 @@ singularity exec ../../../containers/container.sif python3 ../../../src/scripts/
 }
 
 # Mesh Generation Steps
-run_step "Running blockMesh" "blockMesh" "${MESH_LOG}"
-run_step "Running surfaceFeatureExtract" "surfaceFeatureExtract" "${LOG_DIR}/surfaceFeatureExtract.log"
-run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
+echo "🔹Running blockMesh..."
+blockMesh > blockMesh.log 2>&1
+tail -f blockMesh.log
+echo "✅ Finished: blockMesh" 
+
+echo "🔹Running surfaceFeatureExtract..."
+surfaceFeatureExtract > surfaceFeatureExtract.log 2>&1
+tail -f surfaceFeatureExtract.log
+echo "✅ Finished: surfaceFeatureExtract" 
+
+
+echo "🔹Running snappyHexMesh..."
+snappyHexMesh > snappyHexMesh.log 2>&1
+tail -f snappyHexMesh.log
+echo "✅ Finished: snappyHexMesh" 
 
 
 # running the initial conditions creator 
-#singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py || {
-#  echo "❌ Python script 0.py failed"
-#  exit 1
-#}
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py || {
+  echo "❌ Python script 0.py failed"
+  exit 1
+}
 
 # Optional: potentialFoam initialization
 #run_step "Running potentialFoam" "potentialFoam" "${POTENTIAL_LOG}"
@@ -111,7 +107,15 @@ run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
 # Main Solver
 run_step "Running simpleFoam" "simpleFoam" "${SOLVER_LOG}"
 
-foamToVTK
+echo "🔹Running simpleFoam..."
+simpleFoam > simpleFoam.log 2>&1
+tail -f simpleFoam.log
+echo "✅ Finished: snappyHexMesh" 
+
+echo "🔹Running foamToVTK..."
+foamToVTK > foamToVTK.log 2>&1
+tail -f foamToVTK.log
+echo "✅ Finished: foamToVTK" 
 
 paraFoam
 
