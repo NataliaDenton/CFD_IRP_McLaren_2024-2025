@@ -1,9 +1,8 @@
 filePath:
   geometries:
-    rearWheels:
-      file: "constant/triSurface/Geometry/17_wheels-front_scaled.stl"
-      name: Geometry
-      refinementLevel: [2, 3]
+    file: "constant/triSurface/Geometry/rearWheels/18_wheels-rear_scaled.stl"
+    name: Geometry
+    refinementLevel: [2, 3]
 
 
   boundingBoxGeneration_res: "constant/polyMesh/boundingBoxVertices.json"

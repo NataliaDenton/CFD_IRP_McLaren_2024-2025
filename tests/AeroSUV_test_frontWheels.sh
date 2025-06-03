@@ -2,7 +2,7 @@
 set -eo pipefail
 
 # ---- CONFIGURATION ----
-CASE_DIR="../src/Openfoam/AeroSUV_frontWheels_case"
+CASE_DIR="../src/Openfoam/AeroSUV_rearWheels_case"
 LOG_DIR="log"
 MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
@@ -62,16 +62,16 @@ check_directory_exists "constant/triSurface"
 echo "Scaling STL..."
 surfaceTransformPoints \
   -scale "(0.001 0.001 0.001)" \
-  constant/triSurface/Geometry/frontWheels/17_wheels-front.stl \
-  constant/triSurface/Geometry/frontWheels/17_wheels-front_scaled.stl
+  constant/triSurface/Geometry/rearWheels/17_wheels-rear.stl \
+  constant/triSurface/Geometry/rearWheels/17_wheels-rear_scaled.stl
 
 # Make sure the Python script is executable or specify interpreter
-singularity exec ../../../containers/container.sif python3 ../../../src/runners/meshGeneration.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/meshGeneration.py || {
   echo "❌ Python script meshGeneration.py failed"
   exit 1
 }
 
-singularity exec ../../../containers/container.sif python3 ../../../src/runners/constant.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/constant.py || {
   echo "❌ Python script meshGeneration.py failed"
   exit 1
 }
@@ -85,7 +85,7 @@ run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
 
 
 # running the initial conditions creator 
-singularity exec ../../../containers/container.sif python3 ../../../src/runners/0.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py || {
   echo "❌ Python script 0.py failed"
   exit 1
 }

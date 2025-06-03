@@ -1,11 +1,3 @@
-/*--------------------------------*- C++ -*----------------------------------*\
-| =========                 |                                                 |
-| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \    /   O peration     | Version: 2312                                   |
-|   \  /    A nd           | Web:      www.OpenFOAM.com                      |
-|    \/     M anipulation  |                                                 |
-\*---------------------------------------------------------------------------*/
-
 FoamFile
 {
     version     2.0;
@@ -14,21 +6,16 @@ FoamFile
     object      surfaceFeatureExtractDict;
 }
 
-// ************************************************************************* //
+extractionMethod    extractFromSurface;
 
-surfaces
+extractFromSurfaceCoeffs
 {
-        rearWheels
-        {
-            extractionMethod    extractFromSurface;
+    // Name of the STL file in constant/triSurface folder
+    file    "18_wheels-rear_scaled.stl";
 
-            extractFromSurfaceCoeffs
-            {
-                file            "Geometry/17_wheels-front_scaled.stl";
-                extractAngle   150;
-            }
-
-            writeObjFeatures    yes;
-        }
+    // Angle to detect sharp edges, degrees
+    extractAngle    150;
 }
+
+writeObjFeatures    yes;
 

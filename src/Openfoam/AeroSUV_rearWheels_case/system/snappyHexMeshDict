@@ -1,3 +1,11 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version: 2312                                   |
+|   \  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
 FoamFile
 {
     version     2.0;
@@ -5,6 +13,8 @@ FoamFile
     class       dictionary;
     object      snappyHexMeshDict;
 }
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 castellatedMesh true;
 snap            true;
@@ -14,28 +24,41 @@ geometry
 {
     Geometry
     {
-        type    triSurfaceMesh;
-        file    "Geometry/17_wheels-front_scaled.stl";
+        type triSurfaceMesh;
+        file "Geometry/rearWheels/18_wheels-rear_scaled.stl";
     }
 }
+
 castellatedMeshControls
 {
     maxLocalCells 1000000;
     maxGlobalCells 2000000;
     minRefinementCells 10;
     nCellsBetweenLevels 3;
+    mergeTolerance     1e-6;    
 
-    features ();
-
+    features 
+    (
+    );
+    
     refinementSurfaces
     {
-    rearWheels { level (2 3); }
+            Geometry
+        {
+            level (1 3);
+        }
+    }
+
+    refinementRegions
+    {
+        // If no volume refinement is needed, keep this empty but present:
     }
 
     resolveFeatureAngle 30;
     refinementRegions {}
+
     locationInMesh (0 0 0);
-    allowFreeStandingZoneFaces true;
+    allowFreeStandingZoneFaces false;
 }
 
 snapControls
@@ -49,7 +72,13 @@ snapControls
 addLayersControls
 {
     relativeSizes true;
-    layers {}
+    layers 
+    {
+        "Geometry.*"
+        {
+            nSurfaceLayers 3;
+        }
+    }
     expansionRatio 1.0;
     finalLayerThickness 0.3;
     minThickness 0.1;
@@ -61,13 +90,14 @@ addLayersControls
     nSmoothThickness 10;
     maxFaceThicknessRatio 0.5;
     maxThicknessToMedialRatio 0.3;
-    minMedianAxisAngle 90;
+    minMedialAxisAngle 60;
     nBufferCellsNoExtrude 0;
     nLayerIter 50;
     nRelaxedIter 20;
 }
 
-meshQualityControls {
+meshQualityControls
+{
     maxNonOrtho 65;
     maxBoundarySkewness 20;
     maxInternalSkewness 4;
@@ -86,3 +116,5 @@ meshQualityControls {
 
 debug 0;
 mergeTolerance 1E-6;
+
+// ************************************************************************* //

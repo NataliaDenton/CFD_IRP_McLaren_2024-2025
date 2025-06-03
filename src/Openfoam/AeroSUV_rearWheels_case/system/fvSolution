@@ -17,7 +17,9 @@ p
         nPreSweeps      0;
         nPostSweeps     2;
         cacheAgglomeration true;
+        nCellsInCoarsestLevel 10;
         aggressiveCoeffs 1;
+        agglomerator     faceAreaPair;
         mergeLevels     1;
     }
 
@@ -50,6 +52,8 @@ p
 SIMPLE
 {
     nNonOrthogonalCorrectors 0;
+    pRefPoint       (0 0 0);  // Physical coordinate point to fix pressure
+    pRefValue       0;
     residualControl
     {
         p               1e-7;

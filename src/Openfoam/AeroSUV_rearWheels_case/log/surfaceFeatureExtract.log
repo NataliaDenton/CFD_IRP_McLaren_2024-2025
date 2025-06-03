@@ -1,0 +1,37 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2312                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _1d8f0d55f7-20231221 OPENFOAM=2312 version=v2312
+Arch   : "LSB;label=32;scalar=64"
+Exec   : surfaceFeatureExtract
+Date   : Jun 02 2025
+Time   : 17:43:53
+Host   : IC-LIN-004
+PID    : 159688
+I/O    : uncollated
+Case   : /home/CCNT/nataliadenton.denton/CFD_IRP_McLaren_2024-2025/src/Openfoam/AeroSUV_rearWheels_case
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, compressionType)
+    in file db/options/IOstreamOption.C at line 171
+    Unknown compression specifier 'uncompressed' using compression off
+
+Note: Feature line extraction only valid on closed manifold surfaces
+
+Reading surfaceFeatureExtractDict
+
+ExecutionTime = 0 s  ClockTime = 0 s
+
+End
+

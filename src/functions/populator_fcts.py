@@ -43,48 +43,23 @@ edges ();
 boundary (
     inlet  {{ type patch; faces ((0 4 7 3)); }}
     outlet {{ type patch; faces ((1 2 6 5)); }}
-    bottom {{ type wall; faces ((0 1 5 4)); }}
-    top    {{ type symmetryPlane; faces ((3 2 6 7)); }}
-    front  {{ type symmetryPlane; faces ((0 1 2 3)); }}
-    back   {{ type symmetryPlane; faces ((4 5 6 7)); }}
+    bottom {{ type wall; faces ((0 1 2 3)); }}
+    top    {{ type symmetryPlane; faces ((4 7 6 5)); }}
+    front  {{ type symmetryPlane; faces ((0 4 5 1)); }}
+    back   {{ type symmetryPlane; faces ((3 2 6 7)); }}
 );
 
 mergePatchPairs ();
 """
     return content
 
-def generate_surfaceFeatureExtractDict(geometry_dict, extract_angle):
-    surface_entries = []
 
-    for name, info in geometry_dict.items():
-        geometry_path = info["file"]
-        geometry_filename = os.path.basename(geometry_path)
 
-        entry = f"""\
-        {name}
-        {{
-            extractionMethod    extractFromSurface;
+def generate_surfaceFeatureExtractDict(geometry_path, extractAngle):
+   
+    geometry_filename = os.path.basename(geometry_path)
 
-            extractFromSurfaceCoeffs
-            {{
-                file            "Geometry/{geometry_filename}";
-                extractAngle   {extract_angle};
-            }}
-
-            writeObjFeatures    yes;
-        }}"""
-        surface_entries.append(entry)
-
-    surfaces_block = "surfaces\n{\n" + "\n\n".join(surface_entries) + "\n}\n"
-
-    return f"""/*--------------------------------*- C++ -*----------------------------------*\\
-| =========                 |                                                 |
-| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version: 2312                                   |
-|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
-|    \\/     M anipulation  |                                                 |
-\\*---------------------------------------------------------------------------*/
-
+    content = f"""\
 FoamFile
 {{
     version     2.0;
@@ -93,10 +68,21 @@ FoamFile
     object      surfaceFeatureExtractDict;
 }}
 
-// ************************************************************************* //
+extractionMethod    extractFromSurface;
 
-{surfaces_block}
+extractFromSurfaceCoeffs
+{{
+    // Name of the STL file in constant/triSurface folder
+    file    "{geometry_filename}";
+
+    // Angle to detect sharp edges, degrees
+    extractAngle    {extractAngle};
+}}
+
+writeObjFeatures    yes;
+
 """
+    return content
 
 
 def write_field_file(field_name: str, config: dict, case_dir: str):
@@ -224,6 +210,9 @@ def write_all_fields(config_path: str, case_dir: str):
     for field in field_list:
         write_field_file(field, config, case_dir)
 
+
+
+
 def populate_transportProperties(config, case_dir):
     with open(config, 'r') as f:
         config = yaml.safe_load(f)
@@ -261,8 +250,8 @@ def populate_turbulenceProperties(config, case_dir):
         config = yaml.safe_load(f)
     turb_config = config['turbulence']
     filepath = os.path.join(case_dir, 'constant', 'turbulenceProperties')
-    turbulence_value = "on" if config['turbulence']['RAS']['turbulence'] == "on" else "off"
-    printCoeffs_value = "on" if config['turbulence']['RAS']['printCoeffs'] == "on" else "off"
+    turbulence_value = "on" if config['turbulence']['RAS']['turbulence'] == True else "off"
+    printCoeffs_value = "on" if config['turbulence']['RAS']['printCoeffs'] == True else "off"
     lines = [
         "/*--------------------------------*- C++ -*----------------------------------*\\",
         "| =========                 |                                                 |",
@@ -322,7 +311,7 @@ writeInterval   {control_params.get("writeInterval", 1)};
 purgeWrite      {control_params.get("purgeWrite", 0)};
 writeFormat     ascii;
 writePrecision  6;
-writeCompression off;
+writeCompression uncompressed;
 timeFormat      general;
 timePrecision   6;
 runTimeModifiable yes;
@@ -403,7 +392,9 @@ p
         nPreSweeps      0;
         nPostSweeps     2;
         cacheAgglomeration true;
+        nCellsInCoarsestLevel 10;
         aggressiveCoeffs 1;
+        agglomerator     faceAreaPair;
         mergeLevels     1;
     }
 
@@ -436,6 +427,8 @@ p
 SIMPLE
 {
     nNonOrthogonalCorrectors 0;
+    pRefPoint       (0 0 0);  // Physical coordinate point to fix pressure
+    pRefValue       0;
     residualControl
     {
         p               1e-7;
@@ -460,24 +453,32 @@ relaxationFactors
 """
 
 def generate_snappyHexMeshDict(shm_config):
-    # --- Build geometry and refinement entries ---
+
     geometry_entries = []
     refinement_entries = []
 
-    for name, geo in shm_config["geometry"].items():
-        stl_file = os.path.basename(geo["file"])
-        refinement = geo["refinementLevel"]
-        geometry_entries.append(
+
+    stl_file = shm_config["geometry"]["file"]
+    name = shm_config["geometry"]["name"]
+    refinement = shm_config["geometry"]["refinementLevel"]
+    geometry_entries.append(
             f'    {name}\n    {{\n        type triSurfaceMesh;\n        file "{stl_file}";\n    }}'
         )
-        refinement_entries.append(
-            f'    {name} {{ level ({refinement[0]} {refinement[1]}); }}'
+    refinement_entries.append(
+            f'        {name}\n        {{\n            level ({refinement[0]} {refinement[1]});\n        }}'
         )
 
     geometry_block = "\n".join(geometry_entries)
     refinement_block = "\n".join(refinement_entries)
-    
-    return f"""\
+
+    return f"""/*--------------------------------*- C++ -*----------------------------------*\\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version: 2312                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\\*---------------------------------------------------------------------------*/
+
 FoamFile
 {{
     version     2.0;
@@ -486,36 +487,44 @@ FoamFile
     object      snappyHexMeshDict;
 }}
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 castellatedMesh {str(shm_config.get("castellatedMesh", True)).lower()};
 snap            {str(shm_config.get("snap", True)).lower()};
 addLayers       {str(shm_config.get("addLayers", False)).lower()};
 
 geometry
 {{
-    Geometry
-    {{
-        type    triSurfaceMesh;
-        file    "Geometry/{stl_file}";
-    }}
+{geometry_block}
 }}
+
 castellatedMeshControls
 {{
     maxLocalCells 1000000;
     maxGlobalCells 2000000;
     minRefinementCells 10;
     nCellsBetweenLevels 3;
+    mergeTolerance     1e-6;    
 
-    features ();
-
+    features 
+    (
+    );
+    
     refinementSurfaces
     {{
-{refinement_block}
+    {refinement_block}
+    }}
+
+    refinementRegions
+    {{
+        // If no volume refinement is needed, keep this empty but present:
     }}
 
     resolveFeatureAngle 30;
     refinementRegions {{}}
+
     locationInMesh (0 0 0);
-    allowFreeStandingZoneFaces true;
+    allowFreeStandingZoneFaces false;
 }}
 
 snapControls
@@ -529,7 +538,13 @@ snapControls
 addLayersControls
 {{
     relativeSizes true;
-    layers {{}}
+    layers 
+    {{
+        "Geometry.*"
+        {{
+            nSurfaceLayers 3;
+        }}
+    }}
     expansionRatio 1.0;
     finalLayerThickness 0.3;
     minThickness 0.1;
@@ -541,13 +556,14 @@ addLayersControls
     nSmoothThickness 10;
     maxFaceThicknessRatio 0.5;
     maxThicknessToMedialRatio 0.3;
-    minMedianAxisAngle 90;
+    minMedialAxisAngle 60;
     nBufferCellsNoExtrude 0;
     nLayerIter 50;
     nRelaxedIter 20;
 }}
 
-meshQualityControls {{
+meshQualityControls
+{{
     maxNonOrtho 65;
     maxBoundarySkewness 20;
     maxInternalSkewness 4;
@@ -566,5 +582,8 @@ meshQualityControls {{
 
 debug 0;
 mergeTolerance 1E-6;
+
+// ************************************************************************* //
 """
+
 

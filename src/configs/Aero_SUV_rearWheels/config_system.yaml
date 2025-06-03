@@ -9,10 +9,9 @@ snappyHexMeshDict:
   snap: true
   addLayers: false
   geometry:
-     rearWheels:
-      file: "constant/triSurface/Geometry/17_wheels-front_scaled.stl"
-      refinementLevel: [2, 3]
-
+    file: "Geometry/rearWheels/18_wheels-rear_scaled.stl"
+    refinementLevel: [1, 3]
+    name: Geometry
 control:
   application: "snappyHexMesh"
   startTime: 0
