@@ -1,9 +1,21 @@
 filePath:
   geometries:
     geom1:
-      file: "constant/triSurface/Geometry/frontWheels/17_wheels-front.stl"
+      file: "constant/triSurface/Geometry/01_body.stl"
     geom2:
-      file: "constant/triSurface/Geometry/rearWheels/18_wheels-rear.stl"
+      file: "constant/triSurface/Geometry/02_side-mirrors.stl"
+    geom3:
+      file: "constant/triSurface/Geometry/08_underbody-flat.stl"
+    geom4:
+      file: "constant/triSurface/Geometry/17_wheels-front.stl"  
+    geom5:
+      file: "constant/triSurface/Geometry/20_cooling-air-closing.stl"
+    geom6:
+      file: "constant/triSurface/Geometry/18_wheels-rear.stl"
+    geom7:
+      file: "constant/triSurface/Geometry/03_rear-end_estate.stl"
+
+
   mergedGeometry:
     file: "constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl"
     name: Geometry

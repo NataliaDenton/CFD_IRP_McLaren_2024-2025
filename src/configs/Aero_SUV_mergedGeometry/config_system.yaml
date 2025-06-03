@@ -7,10 +7,10 @@ filePath:
 control:
   application: "snappyHexMesh"
   startTime: 0
-  endTime: 5000
+  endTime: 1000
   deltaT: 100
   writeInterval: 1
-  purgeWrite: 51
+  purgeWrite: 11
 
 snappyHexMeshDict:
   castellatedMesh: true

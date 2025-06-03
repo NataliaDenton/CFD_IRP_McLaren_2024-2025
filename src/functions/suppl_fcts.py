@@ -6,6 +6,7 @@ from stl import mesh
 import numpy as np
 from pathlib import Path
 import trimesh
+import os
 
 def merge_multiple_stl_files(geometry_config, output_path):
     combined_meshes = []
@@ -17,6 +18,9 @@ def merge_multiple_stl_files(geometry_config, output_path):
         print(f"🔗 Adding STL to merge: {stl_path}")
         mesh_part = trimesh.load_mesh(str(stl_path), file_type='stl')
         combined_meshes.append(mesh_part)
+    
+    output_dir = os.path.dirname(output_path)
+    os.makedirs(output_dir, exist_ok=True)
 
     merged = trimesh.util.concatenate(combined_meshes)
     merged.export(output_path)
