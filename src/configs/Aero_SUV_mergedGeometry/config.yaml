@@ -14,12 +14,12 @@ filePath:
       file: "constant/triSurface/Geometry/18_wheels-rear.stl"
     geom7:
       file: "constant/triSurface/Geometry/03_rear-end_estate.stl"
-
-
   mergedGeometry:
     file: "constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl"
     name: Geometry
     refinementLevel: [2, 3]
+
+
   boundingBoxGeneration_res: "constant/polyMesh/boundingBoxVertices.json"
   blockMesh: "system/blockMeshDict"
   surfaceFeatureExtractDict: "system/surfaceFeatureExtractDict"  # fixed typo

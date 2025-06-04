@@ -291,6 +291,9 @@ def populate_turbulenceProperties(config, case_dir):
 import os
 
 def generate_controlDict(control_params):
+
+    runTimeModifiable = "yes" if control_params['runTimeModifiable'] == True else "no"
+
     return f"""\
 FoamFile
 {{
@@ -300,21 +303,21 @@ FoamFile
     object      controlDict;
 }}
 
-application     {control_params.get("application", "snappyHexMesh")};
-startFrom       startTime;
-startTime       {control_params.get("startTime", 0)};
-stopAt          endTime;
-endTime         {control_params.get("endTime", 1)};
-deltaT          {control_params.get("deltaT", 1)};
-writeControl    timeStep;
-writeInterval   {control_params.get("writeInterval", 1)};
-purgeWrite      {control_params.get("purgeWrite", 0)};
-writeFormat     ascii;
-writePrecision  6;
-writeCompression uncompressed;
-timeFormat      general;
-timePrecision   6;
-runTimeModifiable yes;
+application     {control_params["application"]};
+startFrom       {control_params["startFrom"]};
+startTime       {control_params["startTime"]};
+stopAt          {control_params["stopAt"]};
+endTime         {control_params["endTime"]};
+deltaT          {control_params["deltaT"]};
+writeControl    {control_params["writeControl"]};
+writeInterval   {control_params["writeInterval"]};
+purgeWrite      {control_params["purgeWrite"]};
+writeFormat     {control_params["writeFormat"]};
+writePrecision  {control_params["writePrecision"]};
+writeCompression {control_params["writeCompression"]};
+timeFormat      {control_params["timeFormat"]};
+timePrecision   {control_params["timePrecision"]};
+runTimeModifiable {runTimeModifiable};
 """
 
 def generate_fvSchemes(config):
@@ -461,16 +464,37 @@ def generate_snappyHexMeshDict(shm_config):
     geometry_entries = []
     refinement_entries = []
 
+    
+    stl_file = shm_config["addLayersControls"]["layers"]["region"]["filePath"]
+    name = shm_config["addLayersControls"]["layers"]["region"]["name"]
+    refinement = shm_config["addLayersControls"]["layers"]["region"]["refinementLevel"]
 
-    stl_file = shm_config["geometry"]["file"]
-    name = shm_config["geometry"]["name"]
-    refinement = shm_config["geometry"]["refinementLevel"]
+    castellatedMeshcontrols_config = shm_config["castellatedMeshControls"]
+    snapControls_config = shm_config["snapControls"]
+    addLayersControls_config = shm_config["addLayersControls"]
+    meshQualityControls_config = shm_config["meshQualityControls"]
+
+
+
+
+
     geometry_entries.append(
             f'    {name}\n    {{\n        type triSurfaceMesh;\n        file "{stl_file}";\n    }}'
         )
     refinement_entries.append(
             f'        {name}\n        {{\n            level ({refinement[0]} {refinement[1]});\n        }}'
         )
+
+    castellatedMesh = "on" if shm_config['castellatedMesh'] == True else "off"
+    allowFreeStandingZoneFaces = "on" if castellatedMeshcontrols_config['allowFreeStandingZoneFaces'] == True else "off"
+    snap = "on" if shm_config['snap'] == True else "off"
+    addLayers = "on" if shm_config['addLayers'] == True else "off"
+    relativeSizes = "on" if addLayersControls_config['relativeSizes'] == True else "off"
+ 
+   
+
+    
+
 
     geometry_block = "\n".join(geometry_entries)
     refinement_block = "\n".join(refinement_entries)
@@ -493,9 +517,12 @@ FoamFile
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-castellatedMesh {str(shm_config.get("castellatedMesh", True)).lower()};
-snap            {str(shm_config.get("snap", True)).lower()};
-addLayers       {str(shm_config.get("addLayers", False)).lower()};
+castellatedMesh {castellatedMesh};
+snap            {snap};
+addLayers       {addLayers};
+
+debug {shm_config['debug']};
+mergeTolerance {shm_config['mergeTolerance']};
 
 geometry
 {{
@@ -504,88 +531,80 @@ geometry
 
 castellatedMeshControls
 {{
-    maxLocalCells 1000000;
-    maxGlobalCells 2000000;
-    minRefinementCells 10;
-    nCellsBetweenLevels 3;
-    mergeTolerance     1e-6;    
+    maxLocalCells {castellatedMeshcontrols_config["maxLocalCells"]};
+    maxGlobalCells {castellatedMeshcontrols_config["maxGlobalCells"]};
+    minRefinementCells {castellatedMeshcontrols_config["minRefinementCells"]};
+    nCellsBetweenLevels {castellatedMeshcontrols_config["nCellsBetweenLevels"]};
+    mergeTolerance     {castellatedMeshcontrols_config["mergeTolerance"]};    
 
-    features 
-    (
-    );
+    features {castellatedMeshcontrols_config["features"]};
     
     refinementSurfaces
     {{
     {refinement_block}
     }}
 
-    refinementRegions
-    {{
-        // If no volume refinement is needed, keep this empty but present:
-    }}
+    resolveFeatureAngle {castellatedMeshcontrols_config["resolveFeatureAngle"]};
+    refinementRegions {castellatedMeshcontrols_config["refinementRegions"]};
 
-    resolveFeatureAngle 30;
-    refinementRegions {{}}
-
-    locationInMesh (0 0 0);
-    allowFreeStandingZoneFaces false;
+    locationInMesh {castellatedMeshcontrols_config["locationInMesh"]};
+    allowFreeStandingZoneFaces {allowFreeStandingZoneFaces};
 }}
 
 snapControls
 {{
-    nSmoothPatch 3;
-    tolerance 2.0;
-    nSolveIter 30;
-    nRelaxIter 5;
+    nSmoothPatch {snapControls_config['nSmoothPatch']};
+    tolerance {snapControls_config['tolerance']};
+    nSolveIter {snapControls_config['nSolveIter']};
+    nRelaxIter {snapControls_config['nRelaxIter']};
 }}
 
 addLayersControls
 {{
-    relativeSizes true;
+    relativeSizes {relativeSizes};
     layers 
     {{
-        "Geometry.*"
+        "{addLayersControls_config['layers']['region']['name']}.*"
         {{
-            nSurfaceLayers 3;
+            nSurfaceLayers {addLayersControls_config['layers']['region']['nSurfaceLayers']};
         }}
     }}
-    expansionRatio 1.0;
-    finalLayerThickness 0.3;
-    minThickness 0.1;
-    nGrow 0;
-    featureAngle 60;
-    nRelaxIter 3;
-    nSmoothSurfaceNormals 1;
-    nSmoothNormals 3;
-    nSmoothThickness 10;
-    maxFaceThicknessRatio 0.5;
-    maxThicknessToMedialRatio 0.3;
-    minMedialAxisAngle 60;
-    nBufferCellsNoExtrude 0;
-    nLayerIter 50;
-    nRelaxedIter 20;
+    expansionRatio {addLayersControls_config['expansionRatio']};
+    finalLayerThickness {addLayersControls_config['finalLayerThickness']};
+    minThickness {addLayersControls_config['minThickness']};
+    nGrow {addLayersControls_config['nGrow']};
+    featureAngle {addLayersControls_config['featureAngle']};
+    nRelaxIter {addLayersControls_config['nRelaxIter']};
+    nSmoothSurfaceNormals {addLayersControls_config['nSmoothSurfaceNormals']};
+    nSmoothNormals {addLayersControls_config['nSmoothNormals']};
+    nSmoothThickness {addLayersControls_config['nSmoothThickness']};
+    maxFaceThicknessRatio {addLayersControls_config['maxFaceThicknessRatio']};
+    maxThicknessToMedialRatio {addLayersControls_config['maxThicknessToMedialRatio']};
+    minMedialAxisAngle {addLayersControls_config['minMedialAxisAngle']};
+    nBufferCellsNoExtrude {addLayersControls_config['nBufferCellsNoExtrude']};
+    nLayerIter {addLayersControls_config['nLayerIter']};
+    nRelaxedIter {addLayersControls_config['nRelaxedIter']};
 }}
 
 meshQualityControls
 {{
-    maxNonOrtho 65;
-    maxBoundarySkewness 20;
-    maxInternalSkewness 4;
-    maxConcave 80;
-    minVol 1e-13;
-    minTetQuality 1e-9;
-    minArea -1;
-    minTwist 0.02;
-    minDeterminant 0.001;
-    minFaceWeight 0.02;
-    minVolRatio 0.01;
-    minTriangleTwist -1;
-    nSmoothScale            4;
-    errorReduction          0.75;
+    maxNonOrtho {meshQualityControls_config['maxNonOrtho']};
+    maxBoundarySkewness {meshQualityControls_config['maxBoundarySkewness']};
+    maxInternalSkewness {meshQualityControls_config['maxInternalSkewness']};
+    maxConcave {meshQualityControls_config['maxConcave']};
+    minVol {meshQualityControls_config['minVol']};
+    minTetQuality {meshQualityControls_config['minTetQuality']};
+    minArea {meshQualityControls_config['minArea']};
+    minTwist {meshQualityControls_config['minTwist']};
+    minDeterminant {meshQualityControls_config['minDeterminant']};
+    minFaceWeight {meshQualityControls_config['minFaceWeight']};
+    minVolRatio {meshQualityControls_config['minVolRatio']};
+    minTriangleTwist {meshQualityControls_config['minTriangleTwist']};
+    nSmoothScale            {meshQualityControls_config['nSmoothScale']};
+    errorReduction          {meshQualityControls_config['errorReduction']};
 }}
 
-debug 0;
-mergeTolerance 1E-6;
+
 
 // ************************************************************************* //
 """
