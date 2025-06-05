@@ -17,7 +17,7 @@ filePath:
   mergedGeometry:
     file: "constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl"
     name: Geometry
-    refinementLevel: [2, 3]
+    refinementLevel: [3, 4]
 
 
   boundingBoxGeneration_res: "constant/polyMesh/boundingBoxVertices.json"

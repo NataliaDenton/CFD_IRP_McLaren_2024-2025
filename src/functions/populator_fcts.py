@@ -1,7 +1,12 @@
 import os
 import yaml
 from pathlib import Path
+import sys
+FUNCTIONS_PATH = Path(__file__).resolve().parent / "../../functions"
+sys.path.append(str(FUNCTIONS_PATH))
 
+import IO_fcts
+import suppl_fcts
 
 def generate_blockMeshDict(vertices: list[list[float]], cell_counts) -> str:
     """
@@ -463,7 +468,7 @@ def generate_snappyHexMeshDict(shm_config):
 
     geometry_entries = []
     refinement_entries = []
-
+    refinementRegionsBlock_entries = []
     
     stl_file = shm_config["addLayersControls"]["layers"]["region"]["filePath"]
     name = shm_config["addLayersControls"]["layers"]["region"]["name"]
@@ -475,15 +480,30 @@ def generate_snappyHexMeshDict(shm_config):
     meshQualityControls_config = shm_config["meshQualityControls"]
 
 
+    # Load STL points and compute bounding box for refinement region
+    stl_points = IO_fcts.load_geometry(f'constant/triSurface/{stl_file}')  
+    scale = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['scaling']
+    refinementRegion_boundingBox = suppl_fcts.compute_extended_bounds(stl_points, scale)
+    refinementRegionBlockName = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['name']
+    refinementRegionBlocktype = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['type']
+    refinementRegionBlockmode = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['mode']
+    refinementRegionBlocklevels = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['levels']
 
-
+    refinementRegionBlockMin =  f"({refinementRegion_boundingBox['x_min']} {refinementRegion_boundingBox['y_min']} {refinementRegion_boundingBox['z_min']})"
+    refinementRegionBlockMax = f"({refinementRegion_boundingBox['x_max']} {refinementRegion_boundingBox['y_max']} {refinementRegion_boundingBox['z_max']})"
 
     geometry_entries.append(
-            f'    {name}\n    {{\n        type triSurfaceMesh;\n        file "{stl_file}";\n    }}'
-        )
+        f'    {name}\n    {{\n        type triSurfaceMesh;\n        file "{stl_file}";\n    }}\n'
+        f'    {refinementRegionBlockName}\n    {{\n        type {refinementRegionBlocktype};\n        min {refinementRegionBlockMin};\n        max {refinementRegionBlockMax};\n    }}'
+    )
+
     refinement_entries.append(
             f'        {name}\n        {{\n            level ({refinement[0]} {refinement[1]});\n        }}'
         )
+
+    refinementRegionsBlock_entries.append(
+        f'    {refinementRegionBlockName}\n        {{\n            mode {refinementRegionBlockmode};\n            levels (({refinementRegionBlocklevels[0]} {refinementRegionBlocklevels[1]}));\n        }}'
+    )
 
     castellatedMesh = "on" if shm_config['castellatedMesh'] == True else "off"
     allowFreeStandingZoneFaces = "on" if castellatedMeshcontrols_config['allowFreeStandingZoneFaces'] == True else "off"
@@ -498,6 +518,7 @@ def generate_snappyHexMeshDict(shm_config):
 
     geometry_block = "\n".join(geometry_entries)
     refinement_block = "\n".join(refinement_entries)
+    refinementRegionsBlock = "\n".join(refinementRegionsBlock_entries)
 
     return f"""/*--------------------------------*- C++ -*----------------------------------*\\
 | =========                 |                                                 |
@@ -545,7 +566,10 @@ castellatedMeshControls
     }}
 
     resolveFeatureAngle {castellatedMeshcontrols_config["resolveFeatureAngle"]};
-    refinementRegions {castellatedMeshcontrols_config["refinementRegions"]};
+    refinementRegions 
+    {{
+    {refinementRegionsBlock}
+    }};
 
     locationInMesh {castellatedMeshcontrols_config["locationInMesh"]};
     allowFreeStandingZoneFaces {allowFreeStandingZoneFaces};

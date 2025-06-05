@@ -43,7 +43,7 @@ IO_fcts.save_vertices(vertices, bbox_out_path)
 print(f'✅ Vertices saved to: {bbox_out_path}')
 
 print('📐 Estimating cell counts and generating blockMeshDict...')
-cell_counts = suppl_fcts.estimate_cell_counts(vertices, base_cell_size=0.05)
+cell_counts = suppl_fcts.estimate_cell_counts(vertices, base_cell_size=0.1)
 blockMesh_content = populator_fcts.generate_blockMeshDict(vertices, cell_counts)
 
 with open(blockMesh_path, "w") as f:
