@@ -6,8 +6,8 @@ control:
   startFrom: startTime
   startTime: 0
   stopAt: endTime
-  endTime: 1000
-  deltaT: 100
+  endTime: 10000
+  deltaT: 1000
   writeControl: timeStep
   writeInterval: 1
   purgeWrite: 11
@@ -17,6 +17,29 @@ control:
   timeFormat: general
   timePrecision: 6
   runTimeModifiable: true
+
+
+
+
+###########################################
+#           decomposeParDict              #
+###########################################
+decomposeParDict:
+  numberOfSubdomains: 6
+
+  method: scotch 
+
+  simpleCoeffs:
+    n: (2 3 1)
+    delta: 0.001
+
+  hierarchicalCoeffs:
+    n: (1 3 2)
+    delta: 0.001
+    order: xyz
+  distributed: no
+  roots: ()
+
 
 
 
@@ -32,7 +55,7 @@ snappyHexMeshDict:
     maxLocalCells: 3000000
     maxGlobalCells: 5000000
     minRefinementCells: 10
-    nCellsBetweenLevels: 3
+    nCellsBetweenLevels: 5
     mergeTolerance:     1e-6    
     features: ()
     resolveFeatureAngle: 30
@@ -46,7 +69,7 @@ snappyHexMeshDict:
           side: 0.5      # y+ and y- side padding
           top: 0.5       # z+ direction, above
         mode: inside
-        levels: [4, 5] 
+        levels: [3, 4] 
     locationInMesh: (0 0 0)
     allowFreeStandingZoneFaces: false
 
@@ -65,8 +88,8 @@ snappyHexMeshDict:
       region: 
         name:  Geometry
         filePath: "Geometry/mergedGeometry/mergedGeometry.stl"
-        nSurfaceLayers: 5
-        refinementLevel: [2, 4]
+        nSurfaceLayers: 10
+        refinementLevel: [3, 4]
     expansionRatio: 1.2
     finalLayerThickness: 0.3
     minThickness: 0.1
@@ -170,7 +193,7 @@ fvSolution:
       relTol: 1e-10
 
   SIMPLE:
-    nNonOrthogonalCorrectors: 0
+    nNonOrthogonalCorrectors: 3
     pRefPoint: (0 0 0)
     pRefValue: 0
     residualControl:
@@ -183,9 +206,9 @@ fvSolution:
     fields:
       p: 0.3
     equations:
-      U: 0.7
-      k: 0.7
-      epsilon: 0.7
+      U: 0.5
+      k: 0.5
+      epsilon: 0.5
 
 
 

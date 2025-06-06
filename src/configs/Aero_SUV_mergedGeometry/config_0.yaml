@@ -7,16 +7,16 @@ fields:
 
 U:
   dimensions: [0, 1, -1, 0, 0, 0, 0]
-  internalField: [27 , 0, 0]
+  internalField: [39, 0, 0]
   boundaries:
     inlet:
       type: fixedValue
-      value: [27 , 0 ,0 ]
+      value: [39, 0, 0]
     outlet:
       type: zeroGradient
     bottom:
       type: fixedValue
-      value: [27 , 0 ,0 ]
+      value: [39, 0, 0]  
     top:
       type: symmetryPlane
     front:
@@ -24,8 +24,8 @@ U:
     back:
       type: symmetryPlane
     Geometry:
-      type: noSlip
-
+      type: fixedValue
+      value: [0, 0, 0]
 
 p:
   dimensions: [0, 2, -2, 0, 0, 0, 0]
@@ -47,43 +47,40 @@ p:
     Geometry:
       type: zeroGradient
 
-
 k:
   dimensions: [0, 2, -2, 0, 0, 0, 0]
-  internalField: 2.69
+  internalField: 0.228
   boundaries:
     inlet:
       type: fixedValue
-      value: 2.69
+      value: 0.228
     outlet:
       type: zeroGradient
     bottom:
       type: kqRWallFunction
-      value: uniform 2.69
+      value: uniform 0.228
     top:
       type: symmetryPlane
     front:
       type: symmetryPlane
     back:
       type: symmetryPlane
-    car_body:
+    Geometry:
       type: kqRWallFunction
-      value: uniform 2.69
-
-
+      value: uniform 0.228
 
 epsilon:
   dimensions: [0, 2, -3, 0, 0, 0, 0]
-  internalField: 7.45
+  internalField: 0.064
   boundaries:
     inlet:
       type: fixedValue
-      value: 7.45
+      value: 0.064
     outlet:
       type: zeroGradient
     bottom:
       type: epsilonWallFunction
-      value: uniform 7.45
+      value: uniform 0.064
     top:
       type: symmetryPlane
     front:
@@ -92,19 +89,18 @@ epsilon:
       type: symmetryPlane
     Geometry:
       type: epsilonWallFunction
-      value: uniform 0.745
-
+      value: uniform 0.064
 
 nut:
   dimensions: [0, 2, -1, 0, 0, 0, 0]
-  internalField: 0.0908
+  internalField: 0.073
   boundaries:
     inlet:
       type: calculated
-      value: 0.0908
+      value: 0.073
     outlet:
       type: calculated
-      value: 0.0908
+      value: 0.073
     bottom:
       type: nutkWallFunction
       value: uniform 0
@@ -117,5 +113,4 @@ nut:
     Geometry:
       type: nutkWallFunction
       value: uniform 0
-
 

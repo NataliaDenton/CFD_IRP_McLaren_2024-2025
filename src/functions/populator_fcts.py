@@ -90,6 +90,55 @@ writeObjFeatures    yes;
     return content
 
 
+
+
+def decomposeParDict_populator(configs):
+
+    # --- configs ---
+    simpleCoeffsConfig = configs["simpleCoeffs"]
+    hierarchicalCoeffsConfig = configs["hierarchicalCoeffs"]
+
+    distributed = "on" if configs['distributed'] == True else "off"
+
+    content = f"""\
+FoamFile
+{{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      decomposeParDict;
+}}
+
+numberOfSubdomains {configs["numberOfSubdomains"]};
+
+method          {configs["method"]};
+
+simpleCoeffs
+{{
+    n               {simpleCoeffsConfig["n"]};   // Only used if method is 'simple'
+    delta           {simpleCoeffsConfig["delta"]};
+}}
+
+hierarchicalCoeffs
+{{
+    n               {hierarchicalCoeffsConfig["n"]};   // For 'hierarchical' method
+    delta           {hierarchicalCoeffsConfig["delta"]};
+    order           {hierarchicalCoeffsConfig["order"]};
+}}
+
+distributed      {distributed};
+roots            {configs["roots"]};
+
+
+"""
+    return content
+    
+
+
+
+
+
+
 def write_field_file(field_name: str, config: dict, case_dir: str):
     """
     Write OpenFOAM field file (e.g., U, p, k, epsilon, nut) to the '0/' directory.
@@ -214,6 +263,7 @@ def write_all_fields(config_path: str, case_dir: str):
 
     for field in field_list:
         write_field_file(field, config, case_dir)
+
 
 
 

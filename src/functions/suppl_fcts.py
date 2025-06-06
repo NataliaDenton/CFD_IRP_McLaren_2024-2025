@@ -75,5 +75,43 @@ def estimate_cell_counts(vertices: list[list[float]], base_cell_size=0.1) -> tup
 
 
 
+def parse_boundary_names(boundary_file_path):
+    """
+    Parse boundary names from OpenFOAM boundary file without using regex.
+
+    Args:
+        boundary_file_path (Path or str): Path to 'constant/polyMesh/boundary'
+
+    Returns:
+        list of boundary names (str)
+    """
+    with open(boundary_file_path, "r") as f:
+        lines = f.readlines()
+
+    mesh_boundaries = []
+    inside_header = False
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+
+        # Skip FoamFile block or header block
+        if line.startswith("FoamFile"):
+            inside_header = True
+        if inside_header:
+            if line == "}":
+                inside_header = False
+            i += 1
+            continue
+
+        # Candidate for boundary name
+        if i + 1 < len(lines) and lines[i + 1].strip() == "{":
+            name = line.strip()
+            # Sanity check: ignore numeric or empty keys (sometimes counts at top of file)
+            if name and not name[0].isdigit():
+                mesh_boundaries.append(name)
+
+        i += 1
+
+    return mesh_boundaries
 
 

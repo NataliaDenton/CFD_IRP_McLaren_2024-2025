@@ -24,19 +24,26 @@ controlDict_filePath = "system/controlDict"
 fvSchemes_filePath = "system/fvSchemes"
 fvSolution_filePath = "system/fvSolution"
 snappyHexMeshDict_filePath = "system/snappyHexMeshDict"
-
+decomposeParDict_filePath = "system/decomposeParDict"
 # --- configs ---
 
 controlDict_config = config["control"]
 fvSchemes_config = config["fvSchemes"]
 fvSolution_config = config["fvSolution"]
 snappyHexMesh_config = config["snappyHexMeshDict"]
+decomposeParDict_config = config["decomposeParDict"]
 
 
 # --- CONTROL DICT ---
 control_dict_text = populator_fcts.generate_controlDict(controlDict_config)
 IO_fcts.write_text_file(control_dict_text, controlDict_filePath)
 print(f"controlDict written to: {controlDict_filePath}")
+
+
+# --- DECOMPOSE PAR DICT ---
+decomposeParDict_text = populator_fcts.decomposeParDict_populator(decomposeParDict_config)
+IO_fcts.write_text_file(decomposeParDict_text, decomposeParDict_filePath)
+print(f"decomposeParDict written to: {decomposeParDict_filePath}")
 
 # --- FV SCHEMES ---
 fv_schemes_text = populator_fcts.generate_fvSchemes(fvSchemes_config)

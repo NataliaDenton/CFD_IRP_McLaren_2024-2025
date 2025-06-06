@@ -11,7 +11,7 @@ solvers
     p
     {
         solver          GAMG;
-        tolerance       1e-10;
+        tolerance       1e-8;
         relTol          1e-10;
         smoother        GaussSeidel;
         nPreSweeps      0;
@@ -27,7 +27,7 @@ solvers
     U
     {
         solver          smoothSolver;
-        tolerance       1e-10;
+        tolerance       1e-8;
         relTol          1e-10;
         smoother        symGaussSeidel;
     }
@@ -35,7 +35,7 @@ solvers
     k
     {
         solver          smoothSolver;
-        tolerance       1e-10;
+        tolerance       1e-8;
         relTol          1e-10;
         smoother        symGaussSeidel;
     }
@@ -43,7 +43,7 @@ solvers
     epsilon
     {
         solver          smoothSolver;
-        tolerance       1e-10;
+        tolerance       1e-8;
         relTol          1e-10;
         smoother        symGaussSeidel;
     }
@@ -51,7 +51,7 @@ solvers
 
 SIMPLE
 {
-    nNonOrthogonalCorrectors    0;
+    nNonOrthogonalCorrectors    3;
     pRefPoint                   (0 0 0);
     pRefValue                   0;
 
@@ -73,8 +73,8 @@ relaxationFactors
 
     equations
     {
-        U               0.7;
-        k               0.7;
-        epsilon         0.7;
+        U               0.5;
+        k               0.5;
+        epsilon         0.5;
     }
 }
