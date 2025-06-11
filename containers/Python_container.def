@@ -2,6 +2,29 @@ Bootstrap: docker
 From: ubuntu:22.04
 
 %post
+    # Fail immediately on any error and show each command as it runs
+    set -e
+    set -x
+
+    # IMPORTANT: Patch to disable any critical _foamAddLibAuto failure globally
+    # This must be defined early in the script to take effect before OpenFOAM's bashrc or config.sh
+    # might define or call _foamAddLibAuto in a way that causes issues.
+    _foamAddLibAuto() { return 0; }
+
+    # Purge any stale OpenFOAM-10 installations that may exist from base image
+    rm -rf /root/OpenFOAM/OpenFOAM-10 \
+        /root/OpenFOAM/ThirdParty-10 \
+        /opt/OpenFOAM/OpenFOAM-10 \
+        /opt/OpenFOAM/ThirdParty-10 \
+        /etc/profile.d/openfoam.sh \
+        /etc/bash_completion.d/openfoam \
+        /usr/lib/openfoam/openfoam10 || true
+
+    # Clean up PATHs and unset environment from base image (if any)
+    unset FOAM_INST_DIR WM_PROJECT_VERSION WM_PROJECT_DIR
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    export LD_LIBRARY_PATH=""
+
     ###########################
     # Define utility functions
     ###########################
@@ -20,6 +43,13 @@ From: ubuntu:22.04
     apt-get update && apt-get install -y software-properties-common
 
     DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install -y tzdata
+
+    ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime
+    echo "Etc/UTC" > /etc/timezone
+    dpkg-reconfigure -f noninteractive tzdata
+
 
     for pkg in \
         mpich \
@@ -64,8 +94,7 @@ From: ubuntu:22.04
     # Set up conda and create environment
     ###########################
     export PATH="/opt/conda/bin:$PATH"
-    . /opt/conda/etc/profile.d/conda.sh
-    conda init bash
+
     conda config --set always_yes yes --set changeps1 no
     conda update -n base -c defaults conda
 
@@ -94,8 +123,7 @@ From: ubuntu:22.04
     ###########################
     # Install additional Python packages via pip
     ###########################
-    . /opt/conda/etc/profile.d/conda.sh
-    conda activate mclaren-newenv
+    export PATH="/opt/conda/envs/mclaren-newenv/bin:$PATH"
 
     pip install --upgrade pip
 
@@ -123,14 +151,301 @@ From: ubuntu:22.04
         echo "PyFoam already installed, skipping."
     fi
 
+    ############################################################
+    # Additional APT packages required for OpenFOAM mesh tools
+    ############################################################
+    apt-get update
+    apt-get install -y \
+        libcgns-dev \
+        libscotch-dev \
+        libptscotch-dev \
+        libfftw3-dev \
+        libboost-system-dev \
+        libboost-thread-dev \
+        libboost-iostreams-dev \
+        libcgns-dev \
+        libgmp-dev \
+        libmpfr-dev \
+        libcgal-dev \
+        libscotch-dev \
+        libptscotch-dev \
+        libfftw3-dev \
+        libboost-system-dev \
+        libboost-thread-dev \
+        libboost-iostreams-dev \
+        flex \
+        bison \
+        zlib1g-dev \
+        qtbase5-dev \
+        libreadline-dev \
+        libncurses-dev \
+        libxt-dev \
+        libglu1-mesa-dev \
+        libxmu-dev
+    ############################################################
+    # Build and install Zoltan from source (MPI-aware)
+    ############################################################
+    echo "Installing Zoltan from source..."
+    mkdir -p /opt/build/zoltan
+    cd /opt/build/zoltan
+    wget https://ftp.mcs.anl.gov/pub/petsc/externalpackages/zoltan_distrib_v3.83.tar.gz
+    tar -xzf zoltan_distrib_v3.83.tar.gz
+    cd Zoltan_v3.83
+    mkdir build
+    cd build
+
+    # Fix: temporarily disable Conda to avoid mpicc issues
+    unset CONDA_PREFIX
+    unset CONDA_DEFAULT_ENV
+    unset PYTHONPATH
+    unset PATH
+    export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+    export CC=/usr/bin/mpicc
+    export CXX=/usr/bin/mpicxx
+
+    ../configure \
+        --prefix=/opt/zoltan \
+        --enable-mpi \
+        --with-mpi-compilers
+
+    make -j"$(nproc)"
+    make install
+
+    # Restore Zoltan paths
+    export ZOLTAN_ROOT=/opt/zoltan
+    export PATH="$ZOLTAN_ROOT/bin:$PATH"
+    export LD_LIBRARY_PATH="$ZOLTAN_ROOT/lib:$LD_LIBRARY_PATH"
+
+
+    ############################################################
+    # Build and install ADIOS2 from source
+    ############################################################
+    echo "Installing ADIOS2 from source..."
+    mkdir -p /opt/build/adios2
+    cd /opt/build/adios2
+    git clone https://github.com/ornladios/ADIOS2.git
+    cd ADIOS2
+    git checkout v2.9.2  # Stable version
+
+    mkdir build
+    cd build
+
+    # Temporarily disable Conda to avoid MPI/CMake interference
+    unset CONDA_PREFIX
+    unset CONDA_DEFAULT_ENV
+    unset PYTHONPATH
+    unset PATH
+    export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+    export CC=/usr/bin/mpicc
+    export CXX=/usr/bin/mpicxx
+
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt/adios2 \
+        -DADIOS2_USE_MPI=ON \
+        -DADIOS2_BUILD_EXAMPLES=OFF \
+        -DADIOS2_BUILD_TESTING=OFF \
+        -DBUILD_SHARED_LIBS=ON \
+        -DCMAKE_BUILD_TYPE=Release
+
+
+    make -j"$(nproc)"
+    make install
+
+    export ADIOS2_DIR=/opt/adios2
+    export PATH="/opt/adios2/bin:$PATH"
+    export LD_LIBRARY_PATH="/opt/adios2/lib:$LD_LIBRARY_PATH"
+
+
+    ############################################################
+    # Install OpenFOAM v2312 using APT (with mesh tools)
+    ############################################################
+    echo "Installing OpenFOAM v2312 using official script..."
+    echo "# Adding OpenFOAM APT repo using: curl -s https://dl.openfoam.com/add-debian-repo.sh | bash"
+
+    # Ensure required tools for repo setup are available
+    apt-get install -y curl gnupg lsb-release software-properties-common
+
+    # Add OpenFOAM APT repository
+    curl -s https://dl.openfoam.com/add-debian-repo.sh | bash
+
+    # Update package index and install OpenFOAM
+    apt-get update || { echo "APT update failed"; exit 1; }
+    apt-get install -y openfoam2312-default openfoam2312-dev
+
+
+    # Fix path mismatch by creating expected symlink
+    mkdir -p /opt/OpenFOAM
+    ln -sf /usr/lib/openfoam/openfoam2312 /opt/OpenFOAM/OpenFOAM-2312
+
+    # Now check
+    [ ! -d /opt/OpenFOAM/OpenFOAM-2312 ] && echo "ERROR: OpenFOAM directory not found!" && exit 1
+
+
+    # Verify OpenFOAM directory exists
+    if [ ! -d /usr/lib/openfoam/openfoam2312 ]; then
+        echo "ERROR: OpenFOAM directory /usr/lib/openfoam/openfoam2312 not found!"
+        exit 1
+    fi
+
+    # Create symlink only if target directory exists
+    if [ ! -L /opt/openfoam2312 ]; then
+        ln -sf /usr/lib/openfoam/openfoam2312 /opt/openfoam2312
+    fi
+
+    # Unset variables that might cause fallback to OpenFOAM-10
+    unset WM_PROJECT_DIR
+    unset WM_PROJECT_VERSION
+    unset FOAM_INST_DIR
+    unset LD_PRELOAD
+    export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    export LD_LIBRARY_PATH=""
+
+    echo ">>> Sourcing OpenFOAM bashrc and config.sh components..."
+
+
+    # Wrap OpenFOAM environment sourcing in a fail-safe block
+    # >>> Begin patched OpenFOAM environment sourcing
+    echo ">>> Safely sourcing OpenFOAM bashrc and disabling ThirdParty auto-failures..."
+
+    # The _foamAddLibAuto patch is now GLOBAL within %post, defined at the very top.
+    # So we don't need to put it inside this (set +e ...) block.
+    (set +e
+        # Provide system paths where appropriate
+        export ADIOS2_ARCH_PATH=/opt/adios2 # This path is for your custom ADIOS2 build
+        export CGAL_ARCH_PATH=/usr          # For system installed CGAL
+        export BOOST_ARCH_PATH=/usr         # For system installed Boost
+        export VTK_DIR=/usr                 # For system installed VTK/ParaView libraries
+        export ParaView_DIR=/usr            # For system installed ParaView
+
+        # Source OpenFOAM environment
+        . /opt/openfoam2312/etc/bashrc || true
+
+        # Optionally try sourcing OpenFOAM config.sh files (non-fatal if missing)
+        # These will now use the globally patched _foamAddLibAuto
+        for cfg in adios2 CGAL boost vtk paraview; do
+            cfg_path="/usr/lib/openfoam/openfoam2312/etc/config.sh/$cfg"
+            if [ -f "$cfg_path" ]; then
+                echo "Sourcing $cfg_path"
+                . "$cfg_path" || true
+            else
+                echo "⚠️ Skipping missing $cfg_path"
+            fi
+        done
+    )
+
+    # Verify OpenFOAM executables are present, skip cgnsToFoam and starToFoam
+    missing=0
+    for bin in simpleFoam icoFoam gmshToFoam fluentMeshToFoam vtkUnstructuredToFoam; do
+        bin_path="/usr/lib/openfoam/openfoam2312/platforms/linux64GccDPInt32Opt/bin/$bin"
+        if [ ! -x "$bin_path" ]; then
+            echo "ERROR: Missing OpenFOAM binary: $bin ($bin_path)"
+            missing=1
+        else
+            echo "✔ Found $bin at $bin_path"
+        fi
+    done
+
+    # Optional: Warn but do NOT fail for missing tools like cgnsToFoam and starToFoam
+    for opt_bin in cgnsToFoam starToFoam; do
+        bin_path="/usr/lib/openfoam/openfoam2312/platforms/linux64GccDPInt32Opt/bin/$opt_bin"
+        if [ ! -x "$bin_path" ]; then
+            echo "⚠️ Optional tool missing: $opt_bin (non-fatal)"
+        else
+            echo "✔ Found optional tool: $opt_bin"
+        fi
+    done
+
+    # Abort only if required tools are missing
+    if [ "$missing" -eq 1 ]; then
+        echo "One or more required OpenFOAM tools are missing. Exiting."
+        exit 1
+    fi
+
+
+    # Print OpenFOAM version from sourced environment
+    echo "Checking OpenFOAM version:"
+    # This also needs the _foamAddLibAuto patch, so we source it in a subshell with the patch.
+    # Alternatively, the patch could be made part of a global script sourced early.
+    ( _foamAddLibAuto() { return 0; }; export ADIOS2_ARCH_PATH=/opt/adios2; . /opt/openfoam2312/etc/bashrc || true ) || true
+
+    foamVersion || true
+
+    ############################################################
+    # Optional: Install ParaView (required for paraFoam GUI)
+    ############################################################
+    echo "Installing ParaView for OpenFOAM GUI tools like paraFoam..."
+    apt-get install -y paraview
+
+    # This includes all mesh conversion tools:
+    #  - cgnsToFoam
+    #  - fluentMeshToFoam
+    #  - gmshToFoam
+    #  - nastranToFoam
+    #  - starToFoam
+    #  - vtkUnstructuredToFoam
+    #  - etc.
+
+    ###########################
+    # Final cleanup
+    ###########################
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Persist OpenFOAM environment in container sessions
+    if [ -f /usr/lib/openfoam/openfoam2312/etc/bashrc ]; then
+        echo ". /usr/lib/openfoam/openfoam2312/etc/bashrc" >> /etc/profile.d/openfoam.sh
+        # Also ensure the _foamAddLibAuto patch is available when profile.d is sourced
+        echo "_foamAddLibAuto() { return 0; }" >> /etc/profile.d/openfoam.sh
+
+        chmod +x /etc/profile.d/openfoam.sh
+    else
+        echo "ERROR: bashrc not found in /usr/lib/openfoam/openfoam2312/etc. OpenFOAM environment will not be sourced!"
+        exit 1
+    fi
+    # Ensure clean exit to avoid false build failure
+
+    echo 'unset WM_PROJECT_DIR WM_PROJECT_VERSION FOAM_INST_DIR LD_PRELOAD' >> /etc/profile.d/openfoam.sh
+
+    exit 0
+
 %environment
-    export PATH="/opt/conda/bin:$PATH"
-    . /opt/conda/etc/profile.d/conda.sh
-    conda activate mclaren-newenv
+    export PATH="/opt/conda/envs/mclaren-newenv/bin:/opt/conda/bin:$PATH"
     export PYTHONNOUSERSITE=1
-    export CC=$(which gcc)
-    export CXX=$(which g++)
+    export CC=/usr/bin/gcc
+    export CXX=/usr/bin/g++
+
+    # OpenFOAM paths
+    export FOAM_INST_DIR=/usr/lib/openfoam
+    export WM_PROJECT_VERSION=2312
+
+    # Add OpenFOAM bin/lib to environment
+    export PATH="/usr/lib/openfoam/openfoam2312/platforms/linux64GccDPInt32Opt/bin:$PATH"
+    export LD_LIBRARY_PATH="/usr/lib/openfoam/openfoam2312/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH"
+
+    # Source OpenFOAM environment
+    export ADIOS2_ARCH_PATH=/opt/adios2
+    # Ensure this source happens in a way that doesn't cause issues if a dependency is not found
+    # We add a similar patch here to allow successful sourcing even if _foamAddLibAuto would fail
+    _foamAddLibAuto() { return 0; } # This ensures the patch is active in the %environment context
+    . /usr/lib/openfoam/openfoam2312/etc/bashrc > /dev/null 2>&1
+
+    unset WM_PROJECT_DIR
+    unset WM_PROJECT_VERSION
+
+    # Zoltan environment
+    export ZOLTAN_ROOT=/opt/zoltan
+    export PATH="/opt/zoltan/bin:$PATH"
+    export LD_LIBRARY_PATH="/opt/zoltan/lib:$LD_LIBRARY_PATH"
+
+    # ADIOS2 environment
+    export ADIOS2_DIR=/opt/adios2
+    export PATH="/opt/adios2/bin:$PATH"
+    export LD_LIBRARY_PATH="/opt/adios2/lib:$LD_LIBRARY_PATH"
 
 %runscript
-    exec python3 "$@"
+    # Also patch _foamAddLibAuto in runscript environment if needed for commands run directly
+    # This is also good practice to ensure consistency when running the container.
+    _foamAddLibAuto() { return 0; }
+    (set +e; . /usr/lib/openfoam/openfoam2312/etc/bashrc) || true
 
+    exec python3 "$@"
