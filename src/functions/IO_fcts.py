@@ -5,10 +5,43 @@ import json
 import numpy as np
 import os
 
+
+
+# detect_inputmesh_type.py
+
+import os
+
+def detect_mesh_type(input_dir):
+    """
+    Scans the directory for supported mesh/geometry files and returns the type.
+
+    Parameters:
+        input_dir (str): Path to the input directory.
+
+    Returns:
+        str: One of "msh", "cgns", "stl", or "unknown".
+    """
+    supported_extensions = {
+        ".msh": "msh",
+        ".cgns": "cgns",
+        ".stl": "stl",
+        ".h5": "h5"
+    }
+
+    for file in os.listdir(input_dir):
+        ext = os.path.splitext(file)[1].lower()
+        if ext in supported_extensions:
+            return supported_extensions[ext]
+
+    return "unknown"
+
 def load_config(config_path):
     """Load YAML configuration file."""
     with open(config_path, "r") as f:
         return yaml.safe_load(f)
+
+# file_type = detect_mesh_type(input_dir)
+
 
 def load_geometry(stl_path):
     """Load STL file and return reshaped vertex array."""
