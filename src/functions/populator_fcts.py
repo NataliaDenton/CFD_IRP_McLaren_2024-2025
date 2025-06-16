@@ -92,13 +92,13 @@ writeObjFeatures    yes;
 
 
 
-def decomposeParDict_populator(configs):
+def decomposeParDict_populator(decomposeParDict_configU, decomposeParDict_configA):
 
     # --- configs ---
-    simpleCoeffsConfig = configs["simpleCoeffs"]
-    hierarchicalCoeffsConfig = configs["hierarchicalCoeffs"]
+    simpleCoeffsConfig = decomposeParDict_configA["simpleCoeffs"]
+    hierarchicalCoeffsConfig = decomposeParDict_configA["hierarchicalCoeffs"]
 
-    distributed = "on" if configs['distributed'] == True else "off"
+    distributed = "on" if decomposeParDict_configA['distributed'] == True else "off"
 
     content = f"""\
 FoamFile
@@ -109,9 +109,9 @@ FoamFile
     object      decomposeParDict;
 }}
 
-numberOfSubdomains {configs["numberOfSubdomains"]};
+numberOfSubdomains {decomposeParDict_configU};
 
-method          {configs["method"]};
+method          {decomposeParDict_configA["method"]};
 
 simpleCoeffs
 {{
@@ -127,7 +127,7 @@ hierarchicalCoeffs
 }}
 
 distributed      {distributed};
-roots            {configs["roots"]};
+roots            {decomposeParDict_configA["roots"]};
 
 
 """
@@ -139,7 +139,7 @@ roots            {configs["roots"]};
 
 
 
-def write_field_file(field_name: str, config: dict, case_dir: str):
+def write_field_file(field_name: str, configU: dict,configA: dict, case_dir: str):
     """
     Write OpenFOAM field file (e.g., U, p, k, epsilon, nut) to the '0/' directory.
 
@@ -150,11 +150,14 @@ def write_field_file(field_name: str, config: dict, case_dir: str):
     """
 
     # --- Ensure config section exists ---
-    if field_name not in config:
+    if field_name not in configU:
         raise KeyError(f"Missing '{field_name}' section in config_0.yaml.")
 
-    field_cfg = config[field_name]
-    dimensions = ' '.join(map(str, field_cfg["dimensions"]))
+
+    field_cfg = configU[field_name]
+    field_cfgA = configA[field_name]
+    case_dir = os.path.join('../../',case_dir)
+    dimensions = ' '.join(map(str, field_cfgA["dimensions"]))
     internal = field_cfg["internalField"]
     if isinstance(internal, list):
         internal_field = f"({ ' '.join(map(str, internal)) })"
@@ -215,7 +218,7 @@ def write_field_file(field_name: str, config: dict, case_dir: str):
 {b_value}    }}\n\n"""
 
     # --- Write file to 0/<field_name> ---
-    field_file_path = Path(case_dir) / "0" / field_name
+    field_file_path = os.path.join(case_dir, "0", field_name)
     with open(field_file_path, 'w') as f:
         f.write(f"""/*--------------------------------*- C++ -*----------------------------------*\\
 | =========                 |                                                 |
@@ -246,7 +249,7 @@ boundaryField
     print(f"✅ Generated '0/{field_name}'.")
 
 
-def write_all_fields(config_path: str, case_dir: str):
+def write_all_fields(ConfigU,ConfigA, case_dir):
     """
     Wrapper to write all fields listed in the config YAML.
 
@@ -254,25 +257,21 @@ def write_all_fields(config_path: str, case_dir: str):
         config_path: Path to config_0.yaml
         case_dir: OpenFOAM case path
     """
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
 
-    field_list = config.get("fields", [])
+    field_list = ConfigU.get("fields", [])
     if not field_list:
         raise ValueError("No 'fields' key found in config_0.yaml.")
 
     for field in field_list:
-        write_field_file(field, config, case_dir)
+        write_field_file(field, ConfigU, ConfigA, case_dir)
 
 
 
 
 
-def populate_transportProperties(config, case_dir):
-    with open(config, 'r') as f:
-        config = yaml.safe_load(f)
-    transport_config = config['fluid']
-    filepath = os.path.join(case_dir, 'constant', 'transportProperties')
+def populate_transportProperties(ConfigU,ConfigA, case_dir):
+    
+    filepath = os.path.join('../../',case_dir, 'constant', 'transportProperties')
 
     lines = [
         "/*--------------------------------*- C++ -*----------------------------------*\\",
@@ -292,7 +291,7 @@ def populate_transportProperties(config, case_dir):
         "}",
         "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //",
         f"transportModel  Newtonian;",
-        f"nu              [0 2 -1 0 0 0 0] {transport_config['nu']};",
+        f"nu              [0 2 -1 0 0 0 0] {ConfigU['fluid']['nu']};",
         "",
         "// ************************************************************************* //"
     ]
@@ -300,13 +299,11 @@ def populate_transportProperties(config, case_dir):
     with open(filepath, 'w') as f:
         f.write('\n'.join(lines))
 
-def populate_turbulenceProperties(config, case_dir):
-    with open(config, 'r') as f:
-        config = yaml.safe_load(f)
-    turb_config = config['turbulence']
-    filepath = os.path.join(case_dir, 'constant', 'turbulenceProperties')
-    turbulence_value = "on" if config['turbulence']['RAS']['turbulence'] == True else "off"
-    printCoeffs_value = "on" if config['turbulence']['RAS']['printCoeffs'] == True else "off"
+def populate_turbulenceProperties(ConfigU,ConfigA, case_dir):
+    filepath = os.path.join('../../',case_dir, 'constant', 'turbulenceProperties')
+    turbulence_value = "on" if ConfigA['turbulence']['RAS']['turbulence'] == True else "off"
+    printCoeffs_value = "on" if ConfigA['turbulence']['RAS']['printCoeffs'] == True else "off"
+    
     lines = [
         "/*--------------------------------*- C++ -*----------------------------------*\\",
         "| =========                 |                                                 |",
@@ -324,11 +321,10 @@ def populate_turbulenceProperties(config, case_dir):
         "    object      turbulenceProperties;",
         "}",
         "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //",
-        f"simulationType  {turb_config['simulationType']};",
-        "",
-        f"{turb_config['simulationType']}",
+        f"simulationType  {ConfigU['turbulence']['simulationType']};",
+        f"{ConfigU['turbulence']['simulationType']}",
         "{",
-        f"    RASModel        {turb_config['model']};",
+        f"    RASModel        {ConfigU['turbulence']['model']};",
         f"    turbulence      {turbulence_value};",
         f"    printCoeffs     {printCoeffs_value};",
         "}",
@@ -345,9 +341,9 @@ def populate_turbulenceProperties(config, case_dir):
 
 import os
 
-def generate_controlDict(control_params):
+def generate_controlDict(controlDict_configU, controlDict_configA):
 
-    runTimeModifiable = "yes" if control_params['runTimeModifiable'] == True else "no"
+    runTimeModifiable = "yes" if controlDict_configA['runTimeModifiable'] == True else "no"
 
     return f"""\
 FoamFile
@@ -358,24 +354,24 @@ FoamFile
     object      controlDict;
 }}
 
-application     {control_params["application"]};
-startFrom       {control_params["startFrom"]};
-startTime       {control_params["startTime"]};
-stopAt          {control_params["stopAt"]};
-endTime         {control_params["endTime"]};
-deltaT          {control_params["deltaT"]};
-writeControl    {control_params["writeControl"]};
-writeInterval   {control_params["writeInterval"]};
-purgeWrite      {control_params["purgeWrite"]};
-writeFormat     {control_params["writeFormat"]};
-writePrecision  {control_params["writePrecision"]};
-writeCompression {control_params["writeCompression"]};
-timeFormat      {control_params["timeFormat"]};
-timePrecision   {control_params["timePrecision"]};
+application     {controlDict_configA["application"]};
+startFrom       {controlDict_configA["startFrom"]};
+startTime       {controlDict_configU["startTime"]};
+stopAt          {controlDict_configA["stopAt"]};
+endTime         {controlDict_configU["endTime"]};
+deltaT          {controlDict_configU["deltaT"]};
+writeControl    {controlDict_configU["writeControl"]};
+writeInterval   {controlDict_configU["writeInterval"]};
+purgeWrite      {controlDict_configU["purgeWrite"]};
+writeFormat     {controlDict_configA["writeFormat"]};
+writePrecision  {controlDict_configA["writePrecision"]};
+writeCompression {controlDict_configA["writeCompression"]};
+timeFormat      {controlDict_configA["timeFormat"]};
+timePrecision   {controlDict_configA["timePrecision"]};
 runTimeModifiable {runTimeModifiable};
 """
 
-def generate_fvSchemes(config):
+def generate_fvSchemes(fvSchemes_configU, fvSchemes_configA):
     return f"""\
 FoamFile
 {{
@@ -388,48 +384,48 @@ FoamFile
 // Default discretisation schemes
 ddtSchemes
 {{
-    default         {config["ddtSchemes"]["default"]};
+    default         {fvSchemes_configU["default"]};
 }}
 
 gradSchemes
 {{
-    default         {config["gradSchemes"]["default"]};
-    grad(p)         {config["gradSchemes"]["grad(p)"]};
-    grad(U)         {config["gradSchemes"]["grad(U)"]};
+    default         {fvSchemes_configA["gradSchemes"]["default"]};
+    grad(p)         {fvSchemes_configA["gradSchemes"]["grad(p)"]};
+    grad(U)         {fvSchemes_configA["gradSchemes"]["grad(U)"]};
 }}
 
 divSchemes
 {{
-    div(phi,U)                      {config["divSchemes"]["div(phi,U)"]};
-    div(phi,k)                      {config["divSchemes"]["div(phi,k)"]};
-    div(phi,epsilon)               {config["divSchemes"]["div(phi,epsilon)"]};
-    div((nuEff*dev2(T(grad(U)))))  {config["divSchemes"]["div((nuEff*dev2(T(grad(U)))))"]};
+    div(phi,U)                      {fvSchemes_configA["divSchemes"]["div(phi,U)"]};
+    div(phi,k)                      {fvSchemes_configA["divSchemes"]["div(phi,k)"]};
+    div(phi,epsilon)               {fvSchemes_configA["divSchemes"]["div(phi,epsilon)"]};
+    div((nuEff*dev2(T(grad(U)))))  {fvSchemes_configA["divSchemes"]["div((nuEff*dev2(T(grad(U)))))"]};
 }}
 
 laplacianSchemes
 {{
-    default         {config["laplacianSchemes"]["default"]};
+    default         {fvSchemes_configA["laplacianSchemes"]["default"]};
 }}
 
 interpolationSchemes
 {{
-    default         {config["interpolationSchemes"]["default"]};
+    default         {fvSchemes_configA["interpolationSchemes"]["default"]};
 }}
 
 snGradSchemes
 {{
-    default         {config["snGradSchemes"]["default"]};
+    default         {fvSchemes_configA["snGradSchemes"]["default"]};
 }}
 
 fluxRequired
 {{
-    default         {config["fluxRequired"]["default"]};
+    default         {fvSchemes_configA["fluxRequired"]["default"]};
     p;
 }}
 """
-def generate_fvSolution(config):
+def generate_fvSolution(fvSolution_configA):
 
-    cacheAgglomeration = "on" if config['solvers']['p']['cacheAgglomeration'] == True else "off"
+    cacheAgglomeration = "on" if fvSolution_configA['solvers']['p']['cacheAgglomeration'] == True else "off"
     return f"""\
 FoamFile
 {{
@@ -443,57 +439,57 @@ solvers
 {{
     p
     {{
-        solver          {config["solvers"]["p"]["solver"]};
-        tolerance       {config["solvers"]["p"]["tolerance"]};
-        relTol          {config["solvers"]["p"]["relTol"]};
-        smoother        {config["solvers"]["p"]["smoother"]};
-        nPreSweeps      {config["solvers"]["p"]["nPreSweeps"]};
-        nPostSweeps     {config["solvers"]["p"]["nPostSweeps"]};
+        solver          {fvSolution_configA["solvers"]["p"]["solver"]};
+        tolerance       {fvSolution_configA["solvers"]["p"]["tolerance"]};
+        relTol          {fvSolution_configA["solvers"]["p"]["relTol"]};
+        smoother        {fvSolution_configA["solvers"]["p"]["smoother"]};
+        nPreSweeps      {fvSolution_configA["solvers"]["p"]["nPreSweeps"]};
+        nPostSweeps     {fvSolution_configA["solvers"]["p"]["nPostSweeps"]};
         cacheAgglomeration {cacheAgglomeration};
-        nCellsInCoarsestLevel {config["solvers"]["p"]["nCellsInCoarsestLevel"]};
-        aggressiveCoeffs {config["solvers"]["p"]["aggressiveCoeffs"]};
-        agglomerator {config["solvers"]["p"]["agglomerator"]};
-        mergeLevels {config["solvers"]["p"]["mergeLevels"]};
+        nCellsInCoarsestLevel {fvSolution_configA["solvers"]["p"]["nCellsInCoarsestLevel"]};
+        aggressiveCoeffs {fvSolution_configA["solvers"]["p"]["aggressiveCoeffs"]};
+        agglomerator {fvSolution_configA["solvers"]["p"]["agglomerator"]};
+        mergeLevels {fvSolution_configA["solvers"]["p"]["mergeLevels"]};
         
     }}
 
     U
     {{
-        solver          {config["solvers"]["U"]["solver"]};
-        tolerance       {config["solvers"]["U"]["tolerance"]};
-        relTol          {config["solvers"]["U"]["relTol"]};
-        smoother        {config["solvers"]["U"]["smoother"]};
+        solver          {fvSolution_configA["solvers"]["U"]["solver"]};
+        tolerance       {fvSolution_configA["solvers"]["U"]["tolerance"]};
+        relTol          {fvSolution_configA["solvers"]["U"]["relTol"]};
+        smoother        {fvSolution_configA["solvers"]["U"]["smoother"]};
     }}
 
     k
     {{
-        solver          {config["solvers"]["k"]["solver"]};
-        tolerance       {config["solvers"]["k"]["tolerance"]};
-        relTol          {config["solvers"]["k"]["relTol"]};
-        smoother        {config["solvers"]["k"]["smoother"]};
+        solver          {fvSolution_configA["solvers"]["k"]["solver"]};
+        tolerance       {fvSolution_configA["solvers"]["k"]["tolerance"]};
+        relTol          {fvSolution_configA["solvers"]["k"]["relTol"]};
+        smoother        {fvSolution_configA["solvers"]["k"]["smoother"]};
     }}
 
     epsilon
     {{
-        solver          {config["solvers"]["epsilon"]["solver"]};
-        tolerance       {config["solvers"]["epsilon"]["tolerance"]};
-        relTol          {config["solvers"]["epsilon"]["relTol"]};
-        smoother        {config["solvers"]["epsilon"]["smoother"]};
+        solver          {fvSolution_configA["solvers"]["epsilon"]["solver"]};
+        tolerance       {fvSolution_configA["solvers"]["epsilon"]["tolerance"]};
+        relTol          {fvSolution_configA["solvers"]["epsilon"]["relTol"]};
+        smoother        {fvSolution_configA["solvers"]["epsilon"]["smoother"]};
     }}
 }}
 
 SIMPLE
 {{
-    nNonOrthogonalCorrectors    {config["SIMPLE"]["nNonOrthogonalCorrectors"]};
-    pRefPoint                   {config["SIMPLE"]["pRefPoint"]};
-    pRefValue                   {config["SIMPLE"]["pRefValue"]};
+    nNonOrthogonalCorrectors    {fvSolution_configA["SIMPLE"]["nNonOrthogonalCorrectors"]};
+    pRefPoint                   {fvSolution_configA["SIMPLE"]["pRefPoint"]};
+    pRefValue                   {fvSolution_configA["SIMPLE"]["pRefValue"]};
 
     residualControl
     {{
-        p               {config["SIMPLE"]["residualControl"]["p"]};
-        U               {config["SIMPLE"]["residualControl"]["U"]};
-        k               {config["SIMPLE"]["residualControl"]["k"]};
-        epsilon         {config["SIMPLE"]["residualControl"]["epsilon"]};
+        p               {fvSolution_configA["SIMPLE"]["residualControl"]["p"]};
+        U               {fvSolution_configA["SIMPLE"]["residualControl"]["U"]};
+        k               {fvSolution_configA["SIMPLE"]["residualControl"]["k"]};
+        epsilon         {fvSolution_configA["SIMPLE"]["residualControl"]["epsilon"]};
     }}
 }}
 
@@ -501,75 +497,171 @@ relaxationFactors
 {{
     fields
     {{
-        p               {config["relaxationFactors"]["fields"]["p"]};
+        p               {fvSolution_configA["relaxationFactors"]["fields"]["p"]};
     }}
 
     equations
     {{
-        U               {config["relaxationFactors"]["equations"]["U"]};
-        k               {config["relaxationFactors"]["equations"]["k"]};
-        epsilon         {config["relaxationFactors"]["equations"]["epsilon"]};
+        U               {fvSolution_configA["relaxationFactors"]["equations"]["U"]};
+        k               {fvSolution_configA["relaxationFactors"]["equations"]["k"]};
+        epsilon         {fvSolution_configA["relaxationFactors"]["equations"]["epsilon"]};
     }}
 }}
 """
 
+def generate_snappyHexMeshDict(snappyHexMesh_configU, snappyHexMesh_configA):
+    """
+    Build snappyHexMeshDict from YAML-style Python dict.
 
-def generate_snappyHexMeshDict(shm_config):
+    Supports:
+      - multiple layer patches listed in shm_config["addLayersControls"]["layers"]
+      - optional refinement region box
+    """
 
-    geometry_entries = []
-    refinement_entries = []
-    refinementRegionsBlock_entries = []
-    
-    stl_file = shm_config["addLayersControls"]["layers"]["region"]["filePath"]
-    name = shm_config["addLayersControls"]["layers"]["region"]["name"]
-    refinement = shm_config["addLayersControls"]["layers"]["region"]["refinementLevel"]
-
-    castellatedMeshcontrols_config = shm_config["castellatedMeshControls"]
-    snapControls_config = shm_config["snapControls"]
-    addLayersControls_config = shm_config["addLayersControls"]
-    meshQualityControls_config = shm_config["meshQualityControls"]
+    # ------------------------------------------------------------------ #
+    # 1)  Convenience handles
+    # ------------------------------------------------------------------ #
 
 
-    # Load STL points and compute bounding box for refinement region
-    stl_points = IO_fcts.load_geometry(f'constant/triSurface/{stl_file}')  
-    scale = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['scaling']
-    refinementRegion_boundingBox = suppl_fcts.compute_extended_bounds(stl_points, scale)
-    refinementRegionBlockName = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['name']
-    refinementRegionBlocktype = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['type']
-    refinementRegionBlockmode = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['mode']
-    refinementRegionBlocklevels = castellatedMeshcontrols_config['refinementRegions']['refinementBox']['levels']
+    cm_controlsA   = snappyHexMesh_configA["castellatedMeshControls"]
+    snap_controlsA = snappyHexMesh_configA["snapControls"]
+    layer_ctrlA    = snappyHexMesh_configA["addLayersControls"]
+    quality_ctrlA  = snappyHexMesh_configA["meshQualityControls"]
 
-    refinementRegionBlockMin =  f"({refinementRegion_boundingBox['x_min']} {refinementRegion_boundingBox['y_min']} {refinementRegion_boundingBox['z_min']})"
-    refinementRegionBlockMax = f"({refinementRegion_boundingBox['x_max']} {refinementRegion_boundingBox['y_max']} {refinementRegion_boundingBox['z_max']})"
 
-    geometry_entries.append(
-        f'    {name}\n    {{\n        type triSurfaceMesh;\n        file "{stl_file}";\n    }}\n'
-        f'    {refinementRegionBlockName}\n    {{\n        type {refinementRegionBlocktype};\n        min {refinementRegionBlockMin};\n        max {refinementRegionBlockMax};\n    }}'
+    cm_controlsU   = snappyHexMesh_configU
+    # ------------------------------------------------------------------ #
+    # 2)  STL file & surface *name*
+    # ------------------------------------------------------------------ #
+    if "geometry" in snappyHexMesh_configA and "Geometry" in snappyHexMesh_configA["geometry"]:
+        stl_file = snappyHexMesh_configA["geometry"]["Geometry"]["file"]
+        surface_name = "Geometry"
+    else:  # backward compatibility
+        stl_file = layer_ctrl["layers"]["region"]["filePath"]
+        surface_name = layer_ctrl["layers"]["region"]["name"]
+
+    refinement = (
+        layer_ctrlA.get("layers", {})
+        .get(surface_name, {})
+        .get("refinementLevel", [3, 4])
     )
 
-    refinement_entries.append(
-            f'        {name}\n        {{\n            level ({refinement[0]} {refinement[1]});\n        }}'
+    # ------------------------------------------------------------------ #
+    # 3) Geometry & refinement-box blocks (multi-region support)        #
+    # ------------------------------------------------------------------ #
+    geo_entries = [
+        f'    {surface_name}\n    {{\n        type triSurfaceMesh;\n'
+        f'        file "{stl_file}";\n    }}'
+    ]
+
+    refinement_regions = cm_controlsA.get("refinementRegions", {})
+    for region_name, box_cfg in refinement_regions.items():
+        if "scaling" in box_cfg:
+            bbox_min = suppl_fcts.compute_extended_bounds(
+                IO_fcts.load_geometry(f'constant/triSurface/{stl_file}'),
+                box_cfg["scaling"]
+            )
+            ref_box_block = f"""
+        {box_cfg['name']}
+        {{
+            type {box_cfg['type']};
+            min ({bbox_min['x_min']} {bbox_min['y_min']} {bbox_min['z_min']});
+            max ({bbox_min['x_max']} {bbox_min['y_max']} {bbox_min['z_max']});
+        }}"""
+            geo_entries.append(ref_box_block)
+
+    geometry_block = "\n".join(geo_entries)
+
+    # ------------------------------------------------------------------ #
+    # 4) refinementSurfaces + refinementRegions blocks                   #
+    # ------------------------------------------------------------------ #
+    refinement_block = (
+        f"        {surface_name}\n"
+        f"        {{\n            level ({refinement[0]} {refinement[1]});\n        }}"
+    )
+
+    refinement_regions_block = ""
+    for region_name, box_cfg in refinement_regions.items():
+        refinement_regions_block += (
+            f"    {box_cfg['name']}\n"
+            f"    {{\n        mode {box_cfg['mode']};\n"
+            f"        levels (({box_cfg['levels'][0]} {box_cfg['levels'][1]}));\n    }}\n"
         )
 
-    refinementRegionsBlock_entries.append(
-        f'    {refinementRegionBlockName}\n        {{\n            mode {refinementRegionBlockmode};\n            levels (({refinementRegionBlocklevels[0]} {refinementRegionBlocklevels[1]}));\n        }}'
-    )
+    # ------------------------------------------------------------------ #
+    # 5)  Build **layer** sub-blocks for every patch
+    # ------------------------------------------------------------------ #
+    layer_entries = []
+    for patch, cfg in layer_ctrlA["layers"].items():
+        layer_entries.append(
+            f'        {patch}\n        {{\n            nSurfaceLayers {cfg["nSurfaceLayers"]};\n        }}'
+        )
+    layers_block = "\n".join(layer_entries)
 
-    castellatedMesh = "on" if shm_config['castellatedMesh'] == True else "off"
-    allowFreeStandingZoneFaces = "on" if castellatedMeshcontrols_config['allowFreeStandingZoneFaces'] == True else "off"
-    snap = "on" if shm_config['snap'] == True else "off"
-    addLayers = "on" if shm_config['addLayers'] == True else "off"
-    relativeSizes = "on" if addLayersControls_config['relativeSizes'] == True else "off"
- 
-   
+    # ------------------------------------------------------------------ #
+    # 6)  Helpers to translate bool → "on/off"
+    # ------------------------------------------------------------------ #
+    as_switch = lambda x: "on" if x else "off"
+    castellatedMesh  = as_switch(snappyHexMesh_configU["castellatedMesh"])
+    snap             = as_switch(snappyHexMesh_configU["snap"])
+    addLayers        = as_switch(snappyHexMesh_configU["addLayers"])
+    relativeSizes    = as_switch(layer_ctrlA["relativeSizes"])
+    explicitSnap     = as_switch(snap_controlsA["explicitFeatureSnap"])
+    multiRegionSnap  = as_switch(snap_controlsA["multiRegionSnap"])
+    allowZones       = as_switch(cm_controlsA["allowFreeStandingZoneFaces"])
 
-    
+    if relativeSizes == "true":
+        addLayer_block = f'''addLayersControls
+{{
+    relativeSizes   {relativeSizes};
+    layers
+    {{
+{layers_block}
+    }}
+    expansionRatio            {layer_ctrlA['expansionRatio']};
+    finalLayerThickness       {layer_ctrlA['finalLayerThickness']};
+    minThickness              {layer_ctrlA['minThickness']};
+    nGrow                     {layer_ctrlA['nGrow']};
+    featureAngle              {layer_ctrlA['featureAngle']};
+    nRelaxIter                {layer_ctrlA['nRelaxIter']};
+    nSmoothSurfaceNormals     {layer_ctrlA['nSmoothSurfaceNormals']};
+    nSmoothNormals            {layer_ctrlA['nSmoothNormals']};
+    nSmoothThickness          {layer_ctrlA['nSmoothThickness']};
+    maxFaceThicknessRatio     {layer_ctrlA['maxFaceThicknessRatio']};
+    maxThicknessToMedialRatio {layer_ctrlA['maxThicknessToMedialRatio']};
+    minMedialAxisAngle        {layer_ctrlA['minMedialAxisAngle']};
+    nBufferCellsNoExtrude     {layer_ctrlA['nBufferCellsNoExtrude']};
+    nLayerIter                {layer_ctrlA['nLayerIter']};
+    nRelaxedIter              {layer_ctrlA['nRelaxedIter']};
+}}'''
+    else:
+        addLayer_block = f'''addLayersControls
+{{
+    relativeSizes   {relativeSizes};
+    layers
+    {{
+{layers_block}
+    }}
+    expansionRatio            {layer_ctrlA['expansionRatio']};
+    finalLayerThickness       {layer_ctrlA['finalLayerThickness']};
+    minThickness              {layer_ctrlA['minThickness']};
+    nGrow                     {layer_ctrlA['nGrow']};
+    featureAngle              {layer_ctrlA['featureAngle']};
+    nRelaxIter                {layer_ctrlA['nRelaxIter']};
+    nSmoothSurfaceNormals     {layer_ctrlA['nSmoothSurfaceNormals']};
+    nSmoothNormals            {layer_ctrlA['nSmoothNormals']};
+    nSmoothThickness          {layer_ctrlA['nSmoothThickness']};
+    maxFaceThicknessRatio     {layer_ctrlA['maxFaceThicknessRatio']};
+    maxThicknessToMedialRatio {layer_ctrlA['maxThicknessToMedialRatio']};
+    minMedialAxisAngle        {layer_ctrlA['minMedialAxisAngle']};
+    nBufferCellsNoExtrude     {layer_ctrlA['nBufferCellsNoExtrude']};
+    nLayerIter                {layer_ctrlA['nLayerIter']};
+    nRelaxedIter              {layer_ctrlA['nRelaxedIter']};
+}}'''
 
-
-    geometry_block = "\n".join(geometry_entries)
-    refinement_block = "\n".join(refinement_entries)
-    refinementRegionsBlock = "\n".join(refinementRegionsBlock_entries)
-
+    # ------------------------------------------------------------------ #
+    # 7)  Assemble final snappyHexMeshDict
+    # ------------------------------------------------------------------ #
     return f"""/*--------------------------------*- C++ -*----------------------------------*\\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
@@ -586,14 +678,12 @@ FoamFile
     object      snappyHexMeshDict;
 }}
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
 castellatedMesh {castellatedMesh};
 snap            {snap};
 addLayers       {addLayers};
 
-debug {shm_config['debug']};
-mergeTolerance {shm_config['mergeTolerance']};
+debug {snappyHexMesh_configA['debug']};
+mergeTolerance {snappyHexMesh_configA['mergeTolerance']};
 
 geometry
 {{
@@ -602,85 +692,63 @@ geometry
 
 castellatedMeshControls
 {{
-    maxLocalCells {castellatedMeshcontrols_config["maxLocalCells"]};
-    maxGlobalCells {castellatedMeshcontrols_config["maxGlobalCells"]};
-    minRefinementCells {castellatedMeshcontrols_config["minRefinementCells"]};
-    nCellsBetweenLevels {castellatedMeshcontrols_config["nCellsBetweenLevels"]};
-    mergeTolerance     {castellatedMeshcontrols_config["mergeTolerance"]};    
+    maxLocalCells        {cm_controlsA["maxLocalCells"]};
+    maxGlobalCells       {cm_controlsA["maxGlobalCells"]};
+    minRefinementCells   {cm_controlsA["minRefinementCells"]};
+    nCellsBetweenLevels  {cm_controlsA["nCellsBetweenLevels"]};
+    mergeTolerance       {cm_controlsA["mergeTolerance"]};
 
-    features {castellatedMeshcontrols_config["features"]};
-    
+    features             {cm_controlsA["features"]};
+
     refinementSurfaces
     {{
-    {refinement_block}
+{refinement_block}
     }}
 
-    resolveFeatureAngle {castellatedMeshcontrols_config["resolveFeatureAngle"]};
-    refinementRegions 
-    {{
-    {refinementRegionsBlock}
-    }};
+    resolveFeatureAngle  {cm_controlsA["resolveFeatureAngle"]};
 
-    locationInMesh {castellatedMeshcontrols_config["locationInMesh"]};
-    allowFreeStandingZoneFaces {allowFreeStandingZoneFaces};
+    refinementRegions
+    {{
+{refinement_regions_block}
+    }}
+
+    locationInMesh       {cm_controlsA["locationInMesh"]};
+    allowFreeStandingZoneFaces {allowZones};
 }}
 
 snapControls
 {{
-    nSmoothPatch {snapControls_config['nSmoothPatch']};
-    tolerance {snapControls_config['tolerance']};
-    nSolveIter {snapControls_config['nSolveIter']};
-    nRelaxIter {snapControls_config['nRelaxIter']};
+    nSmoothPatch    {snap_controlsA['nSmoothPatch']};
+    tolerance       {snap_controlsA['tolerance']};
+    nSolveIter      {snap_controlsA['nSolveIter']};
+    nRelaxIter      {snap_controlsA['nRelaxIter']};
+
+    explicitFeatureSnap {explicitSnap};
+    multiRegionSnap     {multiRegionSnap};
 }}
 
-addLayersControls
-{{
-    relativeSizes {relativeSizes};
-    layers 
-    {{
-        "{addLayersControls_config['layers']['region']['name']}.*"
-        {{
-            nSurfaceLayers {addLayersControls_config['layers']['region']['nSurfaceLayers']};
-        }}
-    }}
-    expansionRatio {addLayersControls_config['expansionRatio']};
-    finalLayerThickness {addLayersControls_config['finalLayerThickness']};
-    minThickness {addLayersControls_config['minThickness']};
-    nGrow {addLayersControls_config['nGrow']};
-    featureAngle {addLayersControls_config['featureAngle']};
-    nRelaxIter {addLayersControls_config['nRelaxIter']};
-    nSmoothSurfaceNormals {addLayersControls_config['nSmoothSurfaceNormals']};
-    nSmoothNormals {addLayersControls_config['nSmoothNormals']};
-    nSmoothThickness {addLayersControls_config['nSmoothThickness']};
-    maxFaceThicknessRatio {addLayersControls_config['maxFaceThicknessRatio']};
-    maxThicknessToMedialRatio {addLayersControls_config['maxThicknessToMedialRatio']};
-    minMedialAxisAngle {addLayersControls_config['minMedialAxisAngle']};
-    nBufferCellsNoExtrude {addLayersControls_config['nBufferCellsNoExtrude']};
-    nLayerIter {addLayersControls_config['nLayerIter']};
-    nRelaxedIter {addLayersControls_config['nRelaxedIter']};
-}}
+
+
+{addLayer_block}
 
 meshQualityControls
 {{
-    maxNonOrtho {meshQualityControls_config['maxNonOrtho']};
-    maxBoundarySkewness {meshQualityControls_config['maxBoundarySkewness']};
-    maxInternalSkewness {meshQualityControls_config['maxInternalSkewness']};
-    maxConcave {meshQualityControls_config['maxConcave']};
-    minVol {meshQualityControls_config['minVol']};
-    minTetQuality {meshQualityControls_config['minTetQuality']};
-    minArea {meshQualityControls_config['minArea']};
-    minTwist {meshQualityControls_config['minTwist']};
-    minDeterminant {meshQualityControls_config['minDeterminant']};
-    minFaceWeight {meshQualityControls_config['minFaceWeight']};
-    minVolRatio {meshQualityControls_config['minVolRatio']};
-    minTriangleTwist {meshQualityControls_config['minTriangleTwist']};
-    nSmoothScale            {meshQualityControls_config['nSmoothScale']};
-    errorReduction          {meshQualityControls_config['errorReduction']};
+    maxNonOrtho          {quality_ctrlA['maxNonOrtho']};
+    maxBoundarySkewness  {quality_ctrlA['maxBoundarySkewness']};
+    maxInternalSkewness  {quality_ctrlA['maxInternalSkewness']};
+    maxConcave           {quality_ctrlA['maxConcave']};
+    minVol               {quality_ctrlA['minVol']};
+    minTetQuality        {quality_ctrlA['minTetQuality']};
+    minArea              {quality_ctrlA['minArea']};
+    minTwist             {quality_ctrlA['minTwist']};
+    minDeterminant       {quality_ctrlA['minDeterminant']};
+    minFaceWeight        {quality_ctrlA['minFaceWeight']};
+    minVolRatio          {quality_ctrlA['minVolRatio']};
+    minTriangleTwist     {quality_ctrlA['minTriangleTwist']};
+    nSmoothScale         {quality_ctrlA['nSmoothScale']};
+    errorReduction       {quality_ctrlA['errorReduction']};
 }}
-
-
 
 // ************************************************************************* //
 """
-
 

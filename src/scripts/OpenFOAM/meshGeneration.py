@@ -10,18 +10,21 @@ import IO_fcts
 import suppl_fcts
 import populator_fcts
 
-CONFIG_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/config.yaml"
+user_CONFIG_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/userConfig.yaml"
+
+advanced_configs_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/advancedConfig.yaml" 
+
 
 print('🔧 Starting bounding box generation. Loading configs...')
-config = IO_fcts.load_config(CONFIG_PATH)
-
+configU = IO_fcts.load_config(user_CONFIG_PATH)
+configA = IO_fcts.load_config(advanced_configs_PATH)
 # --- Extract config values ---
-bbox_out_path = config["filePath"]["boundingBoxGeneration_res"]
-blockMesh_path = config["filePath"]["blockMesh"]
-extract_angle = config["surfaceFeatureExtractDict"]["extractAngle"]
-dict_output_path = config["filePath"]["surfaceFeatureExtractDict"]
-geometry_config = config["filePath"]["mergedGeometry"]
-
+bbox_out_path = configA["advancedGeometrySettings"]["filePath"]["boundingBoxGeneration_res"]
+blockMesh_path = configA['advancedGeometrySettings']["filePath"]["blockMesh"]
+extract_angle = configA['advancedGeometrySettings']["surfaceFeatureExtractDict"]["extractAngle"]
+dict_output_path = configA['advancedGeometrySettings']["filePath"]["surfaceFeatureExtractDict"]
+geometry_config = configA['advancedGeometrySettings']["filePath"]["mergedGeometry"]
+base_cell_size = configA['snappyHexMeshDict']['castellatedMeshControls']['baseCellSize']
 print('✅ Config load success. Loading geometries...')
 
 # --- Aggregate all STL points ---
@@ -34,7 +37,7 @@ all_points.extend(stl_points)
 print('✅ All geometries loaded. Computing bounding box...')
 
 # --- Compute bounds and mesh vertices ---
-bounds = suppl_fcts.compute_extended_bounds(all_points, config["scaling"])
+bounds = suppl_fcts.compute_extended_bounds(all_points, configA["advancedGeometrySettings"]["scaling"])
 vertices = suppl_fcts.format_vertices(bounds)
 suppl_fcts.print_vertices_block(vertices)
 
@@ -43,7 +46,7 @@ IO_fcts.save_vertices(vertices, bbox_out_path)
 print(f'✅ Vertices saved to: {bbox_out_path}')
 
 print('📐 Estimating cell counts and generating blockMeshDict...')
-cell_counts = suppl_fcts.estimate_cell_counts(vertices, base_cell_size=0.1)
+cell_counts = suppl_fcts.estimate_cell_counts(vertices, base_cell_size)
 blockMesh_content = populator_fcts.generate_blockMeshDict(vertices, cell_counts)
 
 with open(blockMesh_path, "w") as f:

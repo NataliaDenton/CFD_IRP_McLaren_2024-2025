@@ -11,8 +11,8 @@ solvers
     p
     {
         solver          GAMG;
-        tolerance       1e-8;
-        relTol          1e-10;
+        tolerance       1e-10;
+        relTol          1e-20;
         smoother        GaussSeidel;
         nPreSweeps      0;
         nPostSweeps     2;
@@ -27,24 +27,24 @@ solvers
     U
     {
         solver          smoothSolver;
-        tolerance       1e-8;
-        relTol          1e-10;
+        tolerance       1e-10;
+        relTol          1e-20;
         smoother        symGaussSeidel;
     }
 
     k
     {
         solver          smoothSolver;
-        tolerance       1e-8;
-        relTol          1e-10;
+        tolerance       1e-10;
+        relTol          1e-20;
         smoother        symGaussSeidel;
     }
 
     epsilon
     {
         solver          smoothSolver;
-        tolerance       1e-8;
-        relTol          1e-10;
+        tolerance       1e-10;
+        relTol          1e-20;
         smoother        symGaussSeidel;
     }
 }
@@ -57,10 +57,10 @@ SIMPLE
 
     residualControl
     {
-        p               1e-7;
-        U               1e-7;
-        k               1e-8;
-        epsilon         1e-8;
+        p               1e-9;
+        U               1e-9;
+        k               1e-9;
+        epsilon         1e-9;
     }
 }
 

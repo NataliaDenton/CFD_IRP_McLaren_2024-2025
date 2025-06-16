@@ -27,15 +27,23 @@ function check_directory_exists() {
     fi
 }
 
+
 function run_step() {
     local description="$1"
     local command="$2"
     local log_file="$3"
 
     echo "🔹 $description..."
-    $command > "$log_file" 2>&1
+    
+    # Run the command, show output live and also write to log file
+    bash -c "$command" 2>&1 | tee "$log_file"
+
     echo "✅ Finished: $description"
 }
+
+
+
+
 
 
 
@@ -47,15 +55,50 @@ function run_step() {
 # ---- MAIN SCRIPT ----
 
 
-
 echo "🔧 Moving to case directory: $CASE_DIR"
 cd "$CASE_DIR"
 # Load OpenFOAM environment (if not already in shell config)
 source $FOAM_BASH  # or use full path if needed
 
-echo "🧼 Cleaning old mesh and logs..."
-rm -rf constant/polyMesh processor* postProcessing ${LOG_DIR} 2>/dev/null || true
+echo "🧼 Cleaning old mesh, logs, and cached files..."
+
+# Remove mesh files
+rm -rf constant/polyMesh 2>/dev/null || true
+
+# Remove processor decompositions (if parallel run used)
+rm -rf processor* 2>/dev/null || true
+
+# Remove logs
+rm -rf ${LOG_DIR} 2>/dev/null || true
 mkdir -p ${LOG_DIR}
+
+# Remove post-processing output
+rm -rf postProcessing 2>/dev/null || true
+
+# Remove any OpenFOAM time directories (e.g., 0.5/, 1/, 100/)
+find . -maxdepth 1 -type d -regex './[0-9]+' -exec rm -rf {} \;
+
+# Remove potential leftover `.vtk` or `paraFoam` data
+rm -rf VTK* *.OpenFOAM 2>/dev/null || true
+
+echo "🧼 Cleanup complete."
+
+# Create the 0 directory
+mkdir -p 0
+
+# Define your expected fields
+fields=("U" "p" "k" "epsilon" "nut" "T" "alphat")
+
+# Touch each as an empty placeholder
+for field in "${fields[@]}"; do
+    touch "0/$field"
+done
+
+echo "📁 Created empty 0/ folder with placeholder field files:"
+ls -lh 0/
+
+
+mkdir -p ${LOG_DIR} 
 
 echo "📦 Generating openfoam mesh scripts..."
 
@@ -65,6 +108,8 @@ check_file_exists "system/blockMeshDict"
 check_file_exists "system/snappyHexMeshDict"
 check_file_exists "system/controlDict"
 check_directory_exists "constant/triSurface"
+
+
 
 
 
@@ -107,7 +152,7 @@ run_step "Decomposing the domain" "decomposePar" "${LOG_DIR}/decomposePar.log"
 run_step "Running surfaceFeatureExtract" "surfaceFeatureExtract" "${LOG_DIR}/surfaceFeatureExtract.log"
 
 
-run_step "Running snappyHexMesh in parallel" "mpirun -np 6 snappyHexMesh -parallel -overwrite" "${SNAPPY_LOG}"
+run_step "Running snappyHexMesh in parallel" "mpirun -np 4 snappyHexMesh -parallel -overwrite" "${SNAPPY_LOG}"
 
 # running the initial conditions creator 
 singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py || {
@@ -115,7 +160,7 @@ singularity exec ../../../containers/container.sif python3 ../../../src/scripts/
   exit 1
 }
 
-run_step "Running simpleFoam in parallel" "mpirun -np 6 simpleFoam -parallel" "${SOLVER_LOG}"
+run_step "Running simpleFoam in parallel" "mpirun -np 4 simpleFoam -parallel" "${SOLVER_LOG}"
 
 run_step "Reconstructing solution fields" "reconstructPar" "${LOG_DIR}/reconstructPar.log"
 

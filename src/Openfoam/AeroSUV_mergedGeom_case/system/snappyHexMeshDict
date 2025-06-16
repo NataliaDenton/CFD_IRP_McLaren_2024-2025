@@ -14,14 +14,12 @@ FoamFile
     object      snappyHexMeshDict;
 }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
 castellatedMesh on;
 snap            on;
 addLayers       on;
 
 debug 0;
-mergeTolerance 1E-6;
+mergeTolerance 1e-6;
 
 geometry
 {
@@ -30,99 +28,121 @@ geometry
         type triSurfaceMesh;
         file "Geometry/mergedGeometry/mergedGeometry.stl";
     }
-    refinementBox
-    {
-        type searchableBox;
-        min (-1.3622519969940186 -0.5119140148162842 -0.0059986598789691925);
-        max (3.258755922317505 0.5119140148162842 0.596733808517456);
-    }
+
+        refinementBox
+        {
+            type searchableBox;
+            min (-1.3622519969940186 -0.5119140148162842 -0.0059986598789691925);
+            max (3.258755922317505 0.5119140148162842 0.596733808517456);
+        }
+
+        refinementBox2
+        {
+            type searchableBox;
+            min (-0.43805038928985596 -0.3583398163318634 -0.0059986598789691925);
+            max (1.8146910667419434 0.3583398163318634 0.4761873483657837);
+        }
 }
 
 castellatedMeshControls
 {
-    maxLocalCells 3000000;
-    maxGlobalCells 5000000;
-    minRefinementCells 10;
-    nCellsBetweenLevels 5;
-    mergeTolerance     1e-6;    
+    maxLocalCells        10000000;
+    maxGlobalCells       15000000;
+    minRefinementCells   10;
+    nCellsBetweenLevels  5;
+    mergeTolerance       1e-6;
 
-    features ();
-    
+    features             ();
+
     refinementSurfaces
     {
-            Geometry
+        Geometry
         {
             level (3 4);
         }
     }
 
-    resolveFeatureAngle 30;
-    refinementRegions 
-    {
-        refinementBox
-        {
-            mode inside;
-            levels ((3 4));
-        }
-    };
+    resolveFeatureAngle  30;
 
-    locationInMesh (0 0 0);
+    refinementRegions
+    {
+    refinementBox
+    {
+        mode inside;
+        levels ((3 4));
+    }
+    refinementBox2
+    {
+        mode inside;
+        levels ((5 6));
+    }
+
+    }
+
+    locationInMesh       (0 0 0);
     allowFreeStandingZoneFaces off;
 }
 
 snapControls
 {
-    nSmoothPatch 3;
-    tolerance 2.0;
-    nSolveIter 30;
-    nRelaxIter 5;
+    nSmoothPatch    3;
+    tolerance       2.0;
+    nSolveIter      30;
+    nRelaxIter      5;
+
+    explicitFeatureSnap on;
+    multiRegionSnap     off;
 }
+
+
 
 addLayersControls
 {
-    relativeSizes on;
-    layers 
+    relativeSizes   on;
+    layers
     {
-        "Geometry.*"
+        Geometry
         {
-            nSurfaceLayers 10;
+            nSurfaceLayers 25;
+        }
+        bottom
+        {
+            nSurfaceLayers 25;
         }
     }
-    expansionRatio 1.2;
-    finalLayerThickness 0.3;
-    minThickness 0.1;
-    nGrow 3;
-    featureAngle 60;
-    nRelaxIter 3;
-    nSmoothSurfaceNormals 1;
-    nSmoothNormals 3;
-    nSmoothThickness 10;
-    maxFaceThicknessRatio 0.5;
+    expansionRatio            1.1;
+    finalLayerThickness       0.3;
+    minThickness              0.05;
+    nGrow                     1;
+    featureAngle              270;
+    nRelaxIter                3;
+    nSmoothSurfaceNormals     1;
+    nSmoothNormals            3;
+    nSmoothThickness          10;
+    maxFaceThicknessRatio     0.5;
     maxThicknessToMedialRatio 0.3;
-    minMedialAxisAngle 60;
-    nBufferCellsNoExtrude 0;
-    nLayerIter 50;
-    nRelaxedIter 20;
+    minMedialAxisAngle        60;
+    nBufferCellsNoExtrude     0;
+    nLayerIter                50;
+    nRelaxedIter              20;
 }
 
 meshQualityControls
 {
-    maxNonOrtho 65;
-    maxBoundarySkewness 20;
-    maxInternalSkewness 4;
-    maxConcave 80;
-    minVol 1e-13;
-    minTetQuality 1e-9;
-    minArea -1;
-    minTwist 0.02;
-    minDeterminant 0.001;
-    minFaceWeight 0.02;
-    minVolRatio 0.01;
-    minTriangleTwist -1;
-    nSmoothScale            4;
-    errorReduction          0.75;
+    maxNonOrtho          65;
+    maxBoundarySkewness  10;
+    maxInternalSkewness  4;
+    maxConcave           70;
+    minVol               1e-9;
+    minTetQuality        1e-5;
+    minArea              -1;
+    minTwist             0.02;
+    minDeterminant       0.001;
+    minFaceWeight        0.02;
+    minVolRatio          0.01;
+    minTriangleTwist     -1;
+    nSmoothScale         4;
+    errorReduction       0.75;
 }
-
-
 
 // ************************************************************************* //
