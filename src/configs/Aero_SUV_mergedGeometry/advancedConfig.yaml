@@ -73,7 +73,7 @@ snappyHexMeshDict:
     minRefinementCells: 10          # minimum cells inside a refined feature
     nCellsBetweenLevels: 5          # transition thickness between Lv-3 → Lv-4
     mergeTolerance:     1e-6        # duplicate-point merge tol (same as root)
-    baseCellSize: 0.2
+    baseCellSize: 0.5
     features: ()                    # will be filled by surfaceFeatureExtract
     resolveFeatureAngle: 30         # edges sharper than 30° refined one extra level
 
