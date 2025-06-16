@@ -1,0 +1,76 @@
+# --------------------------------*- sh -*-----------------------------------
+# File: /etc/profile.d/openfoam-99run.sh
+#
+# Copyright (C) 2021-2022 OpenCFD Ltd.
+# SPDX-License-Identifier: (GPL-3.0-or-later)
+#
+# Environment settings for OpenFOAM (www.openfoam.com)
+#
+# OpenFOAM version: @PACKAGE@
+# ------------------------------------------------------------------------
+
+unset FOAM_CONTAINER_TYPE
+if [ -e /.singularity.d ]
+then
+    FOAM_CONTAINER_TYPE="apptainer"
+elif [ -e /.dockerenv ]
+then
+    FOAM_CONTAINER_TYPE="docker"
+elif [ -e /run/.containerenv ]
+then
+    # (or check container=podman)
+    FOAM_CONTAINER_TYPE="podman"
+fi
+
+# OpenFOAM environment
+if [ -n "@PACKAGE@" ] && [ -f "@PREFIX@/@PACKAGE@"/etc/bashrc ]
+then
+    . "@PREFIX@/@PACKAGE@"/etc/bashrc -- || true
+    case "$-" in (*i*)  # Interactive shell
+        PS1="$FOAM_CONTAINER_TYPE${FOAM_CONTAINER_TYPE:+-}openfoam$(foamEtcFile -show-api 2>/dev/null):"'\w/\n\u\$ '
+        alias sandbox='cd ${WM_PROJECT_DIR:?}/sandbox'
+    esac  # Interactive shell
+fi
+
+
+# X11 Container-only tweaks
+if [ -n "$DISPLAY" ] && [ -f /.dockerenv -o -f /run/.containerenv ]
+then
+    # Various X11 applications:
+    # - 'fake' home to avoid writing into mount point
+    #
+    # No cleanup needed (files disappear when container terminates)
+
+    xdg_home="/tmp/.home.${USER:-nouser}"
+    mkdir -p "$xdg_home"
+
+    [ -n "$XDG_CACHE_HOME" ]  || export XDG_CACHE_HOME="$xdg_home"/.cache
+    [ -n "$XDG_CONFIG_HOME" ] || export XDG_CONFIG_HOME="$xdg_home"/.config
+    [ -n "$XDG_DATA_HOME" ]   || export XDG_DATA_HOME="$xdg_home"/.local/share
+    [ -n "$XDG_STATE_HOME" ]  || export XDG_STATE_HOME="$xdg_home"/.local/state
+
+    if [ -z "$XDG_RUNTIME_DIR" ]
+    then
+        export XDG_RUNTIME_DIR="$xdg_home"/.runtime
+        mkdir -m 0700 "$XDG_RUNTIME_DIR"
+    fi
+    unset xdg_home
+
+    # QT
+    export QT_GRAPHICSSYSTEM=native
+    export QT_X11_NO_MITSHM=1
+    if [ -d /usr/share/X11/xkb ]
+    then
+        export QT_XKB_CONFIG_ROOT=/usr/share/X11/xkb
+    fi
+fi
+
+
+# Squash OPENMPI bug (some versions)
+export OMPI_MCA_btl_vader_single_copy_mechanism=none
+
+# Ignore IB load errors
+export OMPI_MCA_btl_base_warn_component_unused=0
+
+
+# --------------------------------------------------------------------------
