@@ -27,7 +27,8 @@ From: ubuntu:22.04
         python3-venv \
         python3-pip \
         apt-utils vim-tiny nano-tiny wget ca-certificates rsync \
-        passwd libnss-wrapper
+        passwd libnss-wrapper \
+        paraview
 
     echo "🔹 Setting up Python virtual environment..."
     python3 -m venv /openfoam/venv
@@ -44,6 +45,7 @@ From: ubuntu:22.04
 
     echo "🔹 Finalizing permissions..."
     /bin/sh /openfoam/assets/post-install.sh -fix-perms -no-sudo
+
 
 %runscript
     echo "🔹 Sourcing OpenFOAM and Python venv..."
