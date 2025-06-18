@@ -8,10 +8,10 @@
 Build  : _1d8f0d55f7-20231221 OPENFOAM=2312 version=v2312
 Arch   : "LSB;label=32;scalar=64"
 Exec   : blockMesh
-Date   : Jun 16 2025
-Time   : 15:02:59
-Host   : IC-LIN-017
-PID    : 62659
+Date   : Jun 18 2025
+Time   : 14:19:53
+Host   : IC-LIN-008
+PID    : 24762
 I/O    : uncollated
 Case   : /home/CCNT/nataliadenton.denton/CFD_IRP_McLaren_2024-2025/src/Openfoam/AeroSUV_mergedGeom_case
 nProcs : 1
@@ -53,9 +53,9 @@ Creating patches
 Creating cells
 Creating points with scale (1 1 1)
     Block 0 cell size :
-        i : 0.198753 .. 0.198753
-        j : 0.194174 .. 0.194174
-        k : 0.185456 .. 0.185456
+        i : 0.29813 .. 0.29813
+        j : 0.296371 .. 0.296371
+        k : 0.267881 .. 0.267881
 
 No patch pairs to merge
 
@@ -64,19 +64,19 @@ Writing polyMesh with 0 cellZones
 Mesh Information
 ----------------
   boundingBox: (-5.98326 -2.81553 -0.00599866) (12.5008 2.81553 2.40493)
-  nPoints: 39480
-  nCells: 35061
-  nFaces: 109466
-  nInternalFaces: 100900
+  nPoints: 12600
+  nCells: 10602
+  nFaces: 33713
+  nInternalFaces: 29899
 ----------------
 Patches
 ----------------
-  patch 0 (start: 100900 size: 377) name: inlet
-  patch 1 (start: 101277 size: 377) name: outlet
-  patch 2 (start: 101654 size: 2697) name: bottom
-  patch 3 (start: 104351 size: 2697) name: top
-  patch 4 (start: 107048 size: 1209) name: front
-  patch 5 (start: 108257 size: 1209) name: back
+  patch 0 (start: 29899 size: 171) name: inlet
+  patch 1 (start: 30070 size: 171) name: outlet
+  patch 2 (start: 30241 size: 1178) name: bottom
+  patch 3 (start: 31419 size: 1178) name: top
+  patch 4 (start: 32597 size: 558) name: front
+  patch 5 (start: 33155 size: 558) name: back
 
 End
 

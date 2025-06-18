@@ -1,21 +1,18 @@
 ###########################################
-#     Parrallel computing settings        #
+#     Parallel computing settings         #
 ###########################################
 cores: 4
-
-
 
 ###########################################
 #            Case settings                #
 ###########################################
 filePath:
-
   caseDir: "../src/Openfoam/AeroSUV_mergedGeom_case"
   logDir: "log"
-  logMesh: "log/blockMesh.log"
-  logSnappy: "log/snappyHexMesh.log"
+  logMesh: "log/cfMesh.log"
   logPotential: "log/potentialFoam.log"
   logSolver: "log/simpleFoam.log"
+
 ###########################################
 #          Geometry Settings              #
 ###########################################
@@ -39,28 +36,22 @@ filePath:
 #                Meshing                  #
 ###########################################
 mesh:
-  useSnappy: true     # now disabled
-  useCfMesh: false      # enable cfMesh path
-
-snappyHexMeshDict:         # ⚙ High-level toggles; detailed settings in advancedConfig.
-  castellatedMesh: true    #   Rough cut from background mesh.
-  snap: true               #   Pull cell faces onto STL surfaces.
-  addLayers: true          #   Inflate near-wall prisms for y⁺ control.
-  refinementRegions: true  #   Enables extra box/surface refinements (see advanced).
+  useSnappy: false     # now disabled
+  useCfMesh: true      # enable cfMesh path
 
 ###########################################
 #            Fluid Properties             #
 ###########################################
-fluid:                      # ⚙ Standard sea-level dry air, 15 °C.
+fluid:
   name: air
-  rho: 1.225      # kg m⁻³  (density)
-  nu: 1.5e-5      # m² s⁻¹ (kinematic viscosity)
+  rho: 1.225
+  nu: 1.5e-5
 
 ###########################################
 #            Turbulence Model             #
 ###########################################
 turbulence:
-  simulationType: RAS                 # ⚙ Choose among kEpsilon, kOmegaSST, etc.
+  simulationType: RAS
   model: kEpsilon
 
 ###########################################

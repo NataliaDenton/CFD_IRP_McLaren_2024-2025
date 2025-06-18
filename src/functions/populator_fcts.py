@@ -509,6 +509,8 @@ relaxationFactors
 }}
 """
 
+
+
 def generate_snappyHexMeshDict(snappyHexMesh_configU, snappyHexMesh_configA):
     """
     Build snappyHexMeshDict from YAML-style Python dict.
@@ -751,4 +753,196 @@ meshQualityControls
 
 // ************************************************************************* //
 """
+
+def generate_cfMeshDict(meshDict_configU, meshDict_configA):
+    """
+    Build cfMesh meshDict from YAML-style Python dicts.
+
+    Supports:
+      - multiple layer patches listed in shm_config["addLayersControls"]["layers"]
+      - optional refinement region box with computed bounds
+    """
+
+    # 1) Convenience handles
+    stl_file = meshDict_configA["geometry"]["Geometry"]["file"]
+    surface_name = meshDict_configA["geometry"]["Geometry"].get("name", "Geometry")
+    surface_type = meshDict_configA["geometry"]["Geometry"].get("type", "triSurfaceMesh")
+    refinement_surfaces = meshDict_configA.get("refinementSurfaces", {})
+    refinement_regions = meshDict_configA.get("refinementRegions", {})
+
+    # 2) Geometry block - surface mesh
+    geometry_entries = [
+        f'    {surface_name}\n'
+        f'    {{\n'
+        f'        type {surface_type};\n'
+        f'        file "{stl_file}";\n'
+    ]
+
+    # Add refinement surface levels if available
+    if "Geometry" in refinement_surfaces:
+        level = refinement_surfaces["Geometry"].get("level", 3)
+        geometry_entries.append(
+            f'        regions\n        {{\n'
+            f'            Geometry\n            {{\n'
+            f'                name {surface_name};\n'
+            f'                refinementLevel {level};\n'
+            f'            }}\n'
+            f'        }}\n'
+        )
+    geometry_entries.append('    }')  # close Geometry block
+
+    # 3) refinementBoxes blocks (multiple)
+    # For each refinementRegion defined, compute bounding box min/max and add block
+    for region_key, box_cfg in refinement_regions.items():
+        # Load points from STL file for bounding box calculation
+        points = IO_fcts.load_geometry(f'constant/triSurface/{stl_file}')
+
+        # Compute extended bounding box based on scaling factors from config
+        bbox_minmax = suppl_fcts.compute_extended_bounds(points, box_cfg.get("scaling", {}))
+
+        # Compose min and max lines
+        min_str = f'({bbox_minmax["x_min"]:.6f} {bbox_minmax["y_min"]:.6f} {bbox_minmax["z_min"]:.6f})'
+        max_str = f'({bbox_minmax["x_max"]:.6f} {bbox_minmax["y_max"]:.6f} {bbox_minmax["z_max"]:.6f})'
+
+        # Handle refinement levels: can be int or list of ints
+        levels = box_cfg.get("levels", box_cfg.get("level", 4))
+        # If levels is a list, take max (usually max level is relevant for meshDict)
+        if isinstance(levels, list):
+            ref_level = max(levels)
+        else:
+            ref_level = levels
+
+        # Append refinement box block string
+        geometry_entries.append(
+            f'    {box_cfg["name"]}\n'
+            f'    {{\n'
+            f'        type {box_cfg["type"]};\n'
+            f'        min {min_str};\n'
+            f'        max {max_str};\n'
+            f'        refinementLevel {ref_level};\n'
+            f'    }}'
+        )
+
+    geometry_block = "\n".join(geometry_entries)
+
+    # 4) meshSettings block from meshDict_configU (or default fallback)
+    meshSettings = meshDict_configU.get("meshSettings", {})
+    nCellsBetweenLevels = meshSettings.get("nCellsBetweenLevels", 3)
+    maxCellSize = meshSettings.get("maxCellSize", 0.1)
+    minCellSize = meshSettings.get("minCellSize", 0.001)
+    boundaryCellSize = meshSettings.get("boundaryCellSize", 0.02)
+    surfaceMeshRefinement_enable = meshSettings.get("surfaceMeshRefinement", {}).get("enable", 1)
+    internalRefinement_enable = meshSettings.get("internalRefinement", {}).get("enable", 1)
+
+    # 5) boundaryLayers block from meshDict_configU or meshDict_configA
+    boundaryLayers = meshDict_configA.get("boundaryLayers", {})
+    nLayers = boundaryLayers.get("nLayers", 10)
+    thicknessRatio = boundaryLayers.get("thicknessRatio", 0.3)
+    maxFirstLayerThickness = boundaryLayers.get("maxFirstLayerThickness", 0.05)
+    allowDiscontinuity = boundaryLayers.get("allowDiscontinuity", 0)
+    featureAngle = boundaryLayers.get("featureAngle", 60)
+
+    # 6) Compose final meshDict text output
+    return f"""/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version: dev-cfMesh                             |
+|   \  /    A nd           | Web:      https://sourceforge.net/projects/cfmesh|
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      meshDict;
+}}
+
+surfaceFile "constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl"; // STL surface
+
+// Global cell size controls
+maxCellSize     0.3;     // Base size
+minCellSize     0.001;    // Smallest size allowed
+
+// Geometry definition
+geometry
+{{
+    Geometry
+    {{
+        type triSurfaceMesh;
+        file "constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl";
+    }}
+}}
+
+// Background mesh for external domain
+backgroundMesh
+{{
+    box
+    {{
+        type searchableBox;
+        min (-5 -5 -5);
+        max (5 5 5);
+    }}
+    cellSize 0.1;
+}}
+
+// Refinement boxes (make sure these are in external fluid domain)
+refinementBoxes
+{{
+    refinementBox
+    {{
+        type searchableBox;
+        min (-1.3622519969940186 -0.5119140148162842 -0.0059986598789691925);
+        max (3.258755922317505 0.5119140148162842 0.596733808517456);
+        insideLevel 4;
+    }}
+
+    refinementBox2
+    {{
+        type searchableBox;
+        min (-0.43805038928985596 -0.3583398163318634 -0.0059986598789691925);
+        max (1.8146910667419434 0.3583398163318634 0.4761873483657837);
+        insideLevel 6;
+    }}
+}}
+
+// Surface mesh refinement
+meshSettings
+{{
+    nCellsBetweenLevels 5; // analogous to snappy’s nCellsBetweenLevels
+    boundaryCellSize 0.02; // approximate surface refinement
+
+    surfaceMeshRefinement
+    {{
+        enable 1;
+        levels
+        {{
+            Geometry
+            {{
+                level (3 4);
+            }}
+        }}
+    }}
+
+    // Optionally, enable external refinement if your cfMesh version supports it
+    externalRefinement
+    {{
+        enable 1;
+    }}
+}}
+
+// Boundary layers
+boundaryLayers
+{{
+    nLayers                10;
+    thicknessRatio         0.3;
+    maxFirstLayerThickness 0.05;
+    allowDiscontinuity     0;
+    featureAngle           60;
+}}
+
+"""
+
+
 

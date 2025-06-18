@@ -8,10 +8,10 @@
 Build  : _1d8f0d55f7-20231221 OPENFOAM=2312 version=v2312
 Arch   : "LSB;label=32;scalar=64"
 Exec   : surfaceFeatureExtract
-Date   : Jun 16 2025
-Time   : 15:03:00
-Host   : IC-LIN-017
-PID    : 62664
+Date   : Jun 18 2025
+Time   : 14:19:54
+Host   : IC-LIN-008
+PID    : 24765
 I/O    : uncollated
 Case   : /home/CCNT/nataliadenton.denton/CFD_IRP_McLaren_2024-2025/src/Openfoam/AeroSUV_mergedGeom_case
 nProcs : 1

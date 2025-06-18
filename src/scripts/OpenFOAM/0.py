@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 
 import sys
+import argparse
 from pathlib import Path
 
-# Extend path to access functions
 FUNCTIONS_PATH = Path(__file__).resolve().parent / "../../functions"
 sys.path.append(str(FUNCTIONS_PATH))
 
-import populator_fcts
 import IO_fcts
+import populator_fcts
+import suppl_fcts
 
-user_CONFIG_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/userConfig.yaml"
 
-advanced_configs_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/advancedConfig.yaml" 
+p = argparse.ArgumentParser()
+p.add_argument("--configDir", required = True)
+args = p.parse_args()
+
+configDir = args.configDir
+
+
+user_CONFIG_PATH = Path(__file__).parent / configDir/"userConfig.yaml"
+
+advanced_configs_PATH = Path(__file__).parent / configDir/"advancedConfig.yaml" 
+
 
 ConfigU = IO_fcts.load_config(user_CONFIG_PATH)
 ConfigA = IO_fcts.load_config(advanced_configs_PATH)

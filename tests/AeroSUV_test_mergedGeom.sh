@@ -8,7 +8,7 @@ MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
 POTENTIAL_LOG="${LOG_DIR}/potentialFoam.log"
 SOLVER_LOG="${LOG_DIR}/simpleFoam.log"
-
+configDir="../../../src/configs/Aero_SUV_mergedGeometry"
 
 
 # ---- FUNCTIONS ----
@@ -100,33 +100,6 @@ mkdir -p ${LOG_DIR}
 echo "📦 Generating openfoam mesh scripts..."
 
 
-echo "🔍 Detecting input mesh type..."
-INPUT_DIR="constant/triSurface"
-FILE_TYPE=$(singularity exec ../../../containers/container.sif python3 -c \
-"from detect_inputmesh_type import detect_mesh_type; print(detect_mesh_type('${INPUT_DIR}'))")
-
-echo "📁 Detected file type: $FILE_TYPE"
-
-if [[ "$FILE_TYPE" == "msh" ]]; then
-    echo "🔄 Converting .msh to OpenFOAM..."
-    MSH_FILE=$(find "$INPUT_DIR" -name "*.msh" | head -n 1)
-    gmshToFoam "$MSH_FILE"
-
-elif [[ "$FILE_TYPE" == "cgns" ]]; then
-    echo "🔄 Converting .cgns to OpenFOAM..."
-    CGNS_FILE=$(find "$INPUT_DIR" -name "*.cgns" | head -n 1)
-    cgnsToFoam "$CGNS_FILE"
-
-elif [[ "$FILE_TYPE" == "stl" ]]; then
-    echo "📦 Detected STL geometry. Proceeding with full snappyHexMesh pipeline."
-
-else
-    echo "❌ Unsupported or unknown file type in $INPUT_DIR"
-    exit 1
-fi
-
-
-
 # Sanity checks
 check_file_exists "system/blockMeshDict"
 check_file_exists "system/snappyHexMeshDict"
@@ -135,42 +108,42 @@ check_directory_exists "constant/triSurface"
 
 
 
-if [[ "$FILE_TYPE" == "stl" ]]; then
-  singularity exec ../../../containers/container.sif python3 ../../../src/scripts/Geometry/mergeGeometry.py || {
+
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/Geometry/mergeGeometry.py --configDir "$configDir" || {
     echo "❌ Python script mergeGeometry.py failed"
     exit 1
   }
 
-  surfaceTransformPoints \
+surfaceTransformPoints \
     -scale "(0.001 0.001 0.001)" \
     constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl \
     constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl
 
-  singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/meshGeneration.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/meshGeneration.py --configDir "$configDir" || {
     echo "❌ Python script meshGeneration.py failed"
     exit 1
   }
 
-  singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/constant.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/constant.py --configDir "$configDir" || {
     echo "❌ Python script constant.py failed"
     exit 1
   }
 
-  singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/system.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/system.py --configDir "$configDir" || {
     echo "❌ Python script system.py failed"
     exit 1
   }
 
   # Mesh Generation Steps for STL only
-  run_step "Running blockMesh" "blockMesh" "${MESH_LOG}"
-  run_step "Running surfaceFeatureExtract" "surfaceFeatureExtract" "${LOG_DIR}/surfaceFeatureExtract.log"
-  run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
-fi
+run_step "Running blockMesh" "blockMesh" "${MESH_LOG}"
+run_step "Running surfaceFeatureExtract" "surfaceFeatureExtract" "${LOG_DIR}/surfaceFeatureExtract.log"
+run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
+
 
 
 
 # running the initial conditions creator 
-singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py --configDir "$configDir" || {
   echo "❌ Python script 0.py failed"
   exit 1
 }

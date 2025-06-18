@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 
 import sys
+import argparse
 from pathlib import Path
 
 FUNCTIONS_PATH = Path(__file__).resolve().parent / "../../functions"
 sys.path.append(str(FUNCTIONS_PATH))
 
 import IO_fcts
-import suppl_fcts
 import populator_fcts
+import suppl_fcts
 
-user_CONFIG_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/userConfig.yaml"
 
-advanced_configs_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/advancedConfig.yaml" 
+p = argparse.ArgumentParser()
+p.add_argument("--configDir", required = True)
+args = p.parse_args()
+
+configDir = args.configDir
+
+
+user_CONFIG_PATH = Path(__file__).parent / configDir/"userConfig.yaml"
+
+advanced_configs_PATH = Path(__file__).parent / configDir/"advancedConfig.yaml" 
+
 
 
 print('🔧 Starting bounding box generation. Loading configs...')
@@ -24,7 +34,7 @@ blockMesh_path = configA['advancedGeometrySettings']["filePath"]["blockMesh"]
 extract_angle = configA['advancedGeometrySettings']["surfaceFeatureExtractDict"]["extractAngle"]
 dict_output_path = configA['advancedGeometrySettings']["filePath"]["surfaceFeatureExtractDict"]
 geometry_config = configA['advancedGeometrySettings']["filePath"]["mergedGeometry"]
-base_cell_size = configA['snappyHexMeshDict']['castellatedMeshControls']['baseCellSize']
+base_cell_size = configA['baseCellSize']
 print('✅ Config load success. Loading geometries...')
 
 # --- Aggregate all STL points ---

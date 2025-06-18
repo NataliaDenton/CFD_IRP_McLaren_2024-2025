@@ -1,0 +1,85 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2312                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _1d8f0d55f7-20231221 OPENFOAM=2312 version=v2312
+Arch   : "LSB;label=32;scalar=64"
+Exec   : simpleFoam
+Date   : Jun 18 2025
+Time   : 15:05:35
+Host   : IC-LIN-008
+PID    : 26348
+I/O    : uncollated
+Case   : /home/CCNT/nataliadenton.denton/CFD_IRP_McLaren_2024-2025/src/Openfoam/AeroSUV_mergedGeom_case
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, compressionType)
+    in file db/options/IOstreamOption.C at line 171
+    Unknown compression specifier 'uncompressed' using compression off
+Create mesh for time = 0
+
+
+SIMPLE: convergence criteria
+    field p	 tolerance 1e-09
+    field U	 tolerance 1e-09
+    field k	 tolerance 1e-09
+    field epsilon	 tolerance 1e-09
+
+Reading field p
+
+Reading field U
+
+Reading/calculating face flux field phi
+
+Selecting incompressible transport model Newtonian
+Selecting turbulence model type RAS
+Selecting RAS turbulence model kEpsilon
+RAS
+{
+    RASModel        kEpsilon;
+    turbulence      on;
+    printCoeffs     on;
+    Cmu             0.09;
+    C1              1.44;
+    C2              1.92;
+    C3              0;
+    sigmak          1;
+    sigmaEps        1.3;
+}
+
+No MRF models present
+
+No finite volume options present
+
+Starting time loop
+
+Time = 10
+
+smoothSolver:  Solving for Ux, Initial residual = 1, Final residual = 5.63966e-11, No Iterations 12
+smoothSolver:  Solving for Uy, Initial residual = 1, Final residual = 2.45201e-11, No Iterations 12
+smoothSolver:  Solving for Uz, Initial residual = 1, Final residual = 4.19543e-11, No Iterations 12
+GAMG:  Solving for p, Initial residual = 1, Final residual = 9.57416e-11, No Iterations 110
+GAMG:  Solving for p, Initial residual = 0.0102983, Final residual = 9.14921e-11, No Iterations 55
+GAMG:  Solving for p, Initial residual = 0.00121129, Final residual = 8.97254e-11, No Iterations 41
+GAMG:  Solving for p, Initial residual = 0.000243336, Final residual = 8.50542e-11, No Iterations 33
+time step continuity errors : sum local = 1.19968e-08, global = -2.42886e-11, cumulative = -2.42886e-11
+smoothSolver:  Solving for epsilon, Initial residual = 0.130815, Final residual = 8.01538e-11, No Iterations 9
+smoothSolver:  Solving for k, Initial residual = 1, Final residual = 2.11369e-11, No Iterations 13
+ExecutionTime = 384.37 s  ClockTime = 389 s
+
+Time = 20
+
+smoothSolver:  Solving for Ux, Initial residual = 0.389196, Final residual = 2.68152e-11, No Iterations 12
+smoothSolver:  Solving for Uy, Initial residual = 0.510263, Final residual = 3.32803e-11, No Iterations 12
+smoothSolver:  Solving for Uz, Initial residual = 0.513403, Final residual = 3.36054e-11, No Iterations 12
+GAMG:  Solving for p, Initial residual = 0.332726, Final residual = 9.95409e-11, No Iterations 619

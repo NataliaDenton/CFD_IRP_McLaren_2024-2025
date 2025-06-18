@@ -69,7 +69,7 @@ castellatedMeshControls
     refinementBox
     {
         mode inside;
-        levels ((3 4));
+        levels ((4 4));
     }
     refinementBox2
     {
@@ -103,17 +103,17 @@ addLayersControls
     {
         Geometry
         {
-            nSurfaceLayers 25;
+            nSurfaceLayers 10;
         }
         bottom
         {
-            nSurfaceLayers 25;
+            nSurfaceLayers 10;
         }
     }
-    expansionRatio            1.1;
+    expansionRatio            1.2;
     finalLayerThickness       0.3;
-    minThickness              0.05;
-    nGrow                     1;
+    minThickness              0.01;
+    nGrow                     0;
     featureAngle              270;
     nRelaxIter                3;
     nSmoothSurfaceNormals     1;
@@ -130,11 +130,11 @@ addLayersControls
 meshQualityControls
 {
     maxNonOrtho          65;
-    maxBoundarySkewness  10;
-    maxInternalSkewness  4;
-    maxConcave           70;
-    minVol               1e-9;
-    minTetQuality        1e-5;
+    maxBoundarySkewness  20;
+    maxInternalSkewness  6;
+    maxConcave           80;
+    minVol               1e-13;
+    minTetQuality        1e-9;
     minArea              -1;
     minTwist             0.02;
     minDeterminant       0.001;

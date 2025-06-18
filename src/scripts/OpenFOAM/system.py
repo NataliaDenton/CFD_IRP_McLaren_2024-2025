@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import argparse
 from pathlib import Path
 
 FUNCTIONS_PATH = Path(__file__).resolve().parent / "../../functions"
@@ -8,82 +9,84 @@ sys.path.append(str(FUNCTIONS_PATH))
 
 import IO_fcts
 import populator_fcts
-
-user_CONFIG_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/userConfig.yaml"
-
-advanced_configs_PATH = Path(__file__).parent / "../../configs/Aero_SUV_mergedGeometry/advancedConfig.yaml" 
+import suppl_fcts
 
 
-print("🔧 Starting system file generation...")
+p = argparse.ArgumentParser()
+p.add_argument("--configDir", required = True)
+args = p.parse_args()
+
+configDir = args.configDir
+
+
+user_CONFIG_PATH = Path(__file__).parent / configDir/"userConfig.yaml"
+
+advanced_configs_PATH = Path(__file__).parent / configDir/"advancedConfig.yaml" 
+
+
+# Load configs
+print("🔧 Starting system and mesh file generation...")
 configU = IO_fcts.load_config(user_CONFIG_PATH)
 configA = IO_fcts.load_config(advanced_configs_PATH)
 
+# File paths
+system_dir = Path("system")
+paths = {
+    'controlDict': system_dir / 'controlDict',
+    'fvSchemes':  system_dir / 'fvSchemes',
+    'fvSolution': system_dir / 'fvSolution',
+    'snappyHexMeshDict': system_dir / 'snappyHexMeshDict',
+    'meshDict':  system_dir / 'meshDict',
+    'decomposeParDict': system_dir / 'decomposeParDict'
+}
 
+# --- Populate control and decomposition files ---
+IO_fcts.write_text_file(
+    populator_fcts.generate_controlDict(configU['control'], configA['control']),
+    paths['controlDict']
+)
+print(f"controlDict written to: {paths['controlDict']}")
 
-# --- filePaths ---
-controlDict_filePath = "system/controlDict"
-fvSchemes_filePath = "system/fvSchemes"
-fvSolution_filePath = "system/fvSolution"
-snappyHexMeshDict_filePath = "system/snappyHexMeshDict"
-decomposeParDict_filePath = "system/decomposeParDict"
-# --- userConfigs ---
+IO_fcts.write_text_file(
+    populator_fcts.decomposeParDict_populator(configU['cores'], configA['decomposeParDict']),
+    paths['decomposeParDict']
+)
+print(f"decomposeParDict written to: {paths['decomposeParDict']}")
 
-controlDict_configU = configU["control"]
-fvSchemes_configU = configU["fvSchemes"]
+IO_fcts.write_text_file(
+    populator_fcts.generate_fvSchemes(configU['fvSchemes'], configA['fvSchemes']),
+    paths['fvSchemes']
+)
+print(f"fvSchemes written to: {paths['fvSchemes']}")
 
-snappyHexMesh_configU = configU["snappyHexMeshDict"]
-decomposeParDict_configU = configU["cores"]
+IO_fcts.write_text_file(
+    populator_fcts.generate_fvSolution(configA['fvSolution']),
+    paths['fvSolution']
+)
+print(f"fvSolution written to: {paths['fvSolution']}")
 
+# --- Mesh generation toggle based on user config ---
+mesh_cfg = configU.get('mesh', {})
+use_snappy = mesh_cfg.get('useSnappy', False)
+use_cfmesh = mesh_cfg.get('useCfMesh', False)
 
-# --- advancedConfigs ---
+if use_snappy:
+    print("🗜  Generating snappyHexMeshDict...")
+    snappy_text = populator_fcts.generate_snappyHexMeshDict(
+        configU['snappyHexMeshDict'], configA['snappyHexMeshDict']
+    )
+    IO_fcts.write_text_file(snappy_text, paths['snappyHexMeshDict'])
+    print(f"snappyHexMeshDict written to: {paths['snappyHexMeshDict']}")
+else:
+    print("ℹ️  Skipping snappyHexMeshDict generation (disabled in userConfig)")
 
-controlDict_configA = configA["control"]
-fvSchemes_configA = configA["fvSchemes"]
-fvSolution_configA = configA["fvSolution"]
-snappyHexMesh_configA = configA["snappyHexMeshDict"]
-decomposeParDict_configA = configA["decomposeParDict"]
-
-
-# --- CONTROL DICT ---
-control_dict_text = populator_fcts.generate_controlDict(controlDict_configU, controlDict_configA)
-IO_fcts.write_text_file(control_dict_text, controlDict_filePath)
-print(f"controlDict written to: {controlDict_filePath}")
-
-
-# --- DECOMPOSE PAR DICT ---
-decomposeParDict_text = populator_fcts.decomposeParDict_populator(decomposeParDict_configU, decomposeParDict_configA)
-IO_fcts.write_text_file(decomposeParDict_text, decomposeParDict_filePath)
-print(f"decomposeParDict written to: {decomposeParDict_filePath}")
-
-# --- FV SCHEMES ---
-fv_schemes_text = populator_fcts.generate_fvSchemes(fvSchemes_configU, fvSchemes_configA)
-IO_fcts.write_text_file(fv_schemes_text, fvSchemes_filePath)
-print(f"fvSchemes written to: {fvSchemes_filePath}")
-
-# --- FV SOLUTION ---
-fv_solution_text = populator_fcts.generate_fvSolution(fvSolution_configA)
-IO_fcts.write_text_file(fv_solution_text, fvSolution_filePath)
-print(f"fvSolution written to: {fvSolution_filePath}")
-
-
-# --- SNAPPY HEX MESH ---
-snappy_text = populator_fcts.generate_snappyHexMeshDict(snappyHexMesh_configU, snappyHexMesh_configA)
-
-IO_fcts.write_text_file(snappy_text, snappyHexMeshDict_filePath)
-print(f"snappyHexMeshDict written to: {snappyHexMeshDict_filePath}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if use_cfmesh:
+    print("🗜  Generating cfMesh meshDict...")
+    cfmesh_text = populator_fcts.generate_cfMeshDict(
+        configU.get('meshDict', {}), configA.get('meshDict', {})
+    )
+    IO_fcts.write_text_file(cfmesh_text, paths['meshDict'])
+    print(f"meshDict written to: {paths['meshDict']}")
+else:
+    print("ℹ️  Skipping meshDict generation (cfMesh disabled in userConfig)")
 

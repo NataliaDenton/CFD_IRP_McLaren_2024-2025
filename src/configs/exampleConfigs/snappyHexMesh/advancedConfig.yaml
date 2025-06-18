@@ -50,8 +50,6 @@ advancedGeometrySettings:
 ###########################################
 #          snappyHexMeshDict              #
 ###########################################
-baseCellSize: 0.3
-
 snappyHexMeshDict:
   debug:          0      # 0-5 ; higher = more console spam
   mergeTolerance: 1e-6   # points closer than this (fraction of local cell) are merged
@@ -75,12 +73,13 @@ snappyHexMeshDict:
     minRefinementCells: 10          # minimum cells inside a refined feature
     nCellsBetweenLevels: 5          # transition thickness between Lv-3 → Lv-4
     mergeTolerance:     1e-6        # duplicate-point merge tol (same as root)
+    baseCellSize: 0.5
     features: ()                    # will be filled by surfaceFeatureExtract
     resolveFeatureAngle: 30         # edges sharper than 30° refined one extra level
 
     refinementSurfaces:             # surface-specific levels
       Geometry:
-        level: [3, 5]
+        level: [2, 4]
 
     refinementRegions:
       refinementBox:
@@ -124,8 +123,8 @@ snappyHexMeshDict:
       bottom:   {nSurfaceLayers: 10}
     expansionRatio:        1.2   # growth per layer (1 = uniform)
     finalLayerThickness:   0.3   # 30 % of local cell height
-    minThickness:          0.005   # discard if <5 % of local cell
-    nGrow:                 0     # 0 → don’t grow layers onto neighbours
+    minThickness:          0.05   # discard if <5 % of local cell
+    nGrow:                 1     # 0 → don’t grow layers onto neighbours
     featureAngle:          270    # stop layer if surface bends >60°
     nRelaxIter:            3     # smoothing sweeps of layer mesh
     nSmoothSurfaceNormals: 1
