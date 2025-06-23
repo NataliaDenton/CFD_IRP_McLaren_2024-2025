@@ -1,9 +1,12 @@
 # ---------------------------------*-sh-*------------------------------------
-# OpenFOAM 2406 container with Python venv + mesh conversion tools
-# Ubuntu 22.04 base image
+# Copyright (C) 2021-2024 OpenCFD Ltd.
+# SPDX-License-Identifier: (GPL-3.0-or-later)
 #
-# Build command:
+# OpenFOAM 2406 container with Python venv on Ubuntu 22.04
+#
+# Example:
 #   apptainer build --fakeroot openfoam_dev_2406.sif openfoam-dev.def
+#
 # ---------------------------------------------------------------------------
 Bootstrap: docker
 From: ubuntu:22.04
@@ -38,7 +41,7 @@ From: ubuntu:22.04
     apt-get -y install --no-install-recommends \
         openfoam2406 openfoam2406-dev
 
-    echo "🔹 Cleaning up APT cache..."
+    echo "🔹 Cleaning APT cache..."
     rm -rf /var/lib/apt/lists/*
 
     echo "🔹 Finalizing permissions..."
@@ -49,13 +52,12 @@ From: ubuntu:22.04
     export LD_LIBRARY_PATH=/usr/lib/openfoam/openfoam2406/platforms/linux64GccDPInt32Opt/lib:$LD_LIBRARY_PATH
 
 %runscript
-    echo "🔹 Sourcing Python venv and OpenFOAM..."
+    echo "🔹 Sourcing Python venv..."
     source /openfoam/venv/bin/activate
-    source /usr/lib/openfoam/openfoam2406/etc/bashrc
     exec "$@"
 
 %labels
     Author OpenCFD Ltd.
-    Description OpenFOAM 2406 with Python venv + mesh conversion tools for cloud or HPC use
+    Description OpenFOAM 2406 with Python venv + Paraview, for cloud or HPC use
 # ---------------------------------------------------------------------------
 
