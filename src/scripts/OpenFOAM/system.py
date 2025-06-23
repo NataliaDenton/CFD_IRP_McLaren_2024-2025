@@ -72,7 +72,7 @@ use_cfmesh = mesh_cfg.get('useCfMesh', False)
 
 if use_snappy:
     print("🗜  Generating snappyHexMeshDict...")
-    snappy_text = populator_fcts.generate_snappyHexMeshDict(
+    snappy_text = populator_fcts.generate_snappyHexMeshDict(configU, configA,
         configU['snappyHexMeshDict'], configA['snappyHexMeshDict']
     )
     IO_fcts.write_text_file(snappy_text, paths['snappyHexMeshDict'])

@@ -20,6 +20,9 @@ decomposeParDict:
 ###########################################
 #     Advanced Geometry Settings          #
 ###########################################
+format: ascii
+
+
 advancedGeometrySettings:
 
   filePath:                           # ← container for geometry-related files
@@ -27,7 +30,7 @@ advancedGeometrySettings:
       file: "constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl"  # path on disk
       name: Geometry                  #   patch name used by snappyHexMesh
 
-    refinementLevel: [3, 4]           # [minLevel, maxLevel] for surface refinement
+    refinementLevel: [5, 6]           # [minLevel, maxLevel] for surface refinement
                                        #   ↑ raise to capture finer detail (cost ↑)
 
     boundingBoxGeneration_res: "constant/polyMesh/boundingBoxVertices.json" # helper JSON that stores auto-box verts
@@ -37,7 +40,7 @@ advancedGeometrySettings:
   # ----- automatic fluid Region size --------------------------------
   scaling:                            # multipliers applied to geom bbox
     front: 5.0      # multiply bbox length in negative-x  direction
-    back: 10.0      # multiply bbox length in positive-x  direction
+    back: 20.0      # multiply bbox length in positive-x  direction
     side: 5.0       # multiply half-width in ±y directions
     top: 5.0        # multiply height in +z direction (z- < ground handled elsewhere)
 
@@ -50,7 +53,7 @@ advancedGeometrySettings:
 ###########################################
 #          snappyHexMeshDict              #
 ###########################################
-baseCellSize: 0.3
+baseCellSize: 0.2
 
 snappyHexMeshDict:
   debug:          0      # 0-5 ; higher = more console spam
@@ -70,8 +73,8 @@ snappyHexMeshDict:
 
   # -- castellatedMesh stage (cut cells) -----------------------------
   castellatedMeshControls:
-    maxLocalCells:      10000000    # per-CPU hard-stop
-    maxGlobalCells:     15000000    # total mesh cell cap
+    maxLocalCells:      15000000    # per-CPU hard-stop
+    maxGlobalCells:     20000000    # total mesh cell cap
     minRefinementCells: 10          # minimum cells inside a refined feature
     nCellsBetweenLevels: 5          # transition thickness between Lv-3 → Lv-4
     mergeTolerance:     1e-6        # duplicate-point merge tol (same as root)
@@ -80,7 +83,7 @@ snappyHexMeshDict:
 
     refinementSurfaces:             # surface-specific levels
       Geometry:
-        level: [3, 5]
+        level: [3, 4]
 
     refinementRegions:
       refinementBox:
@@ -88,7 +91,7 @@ snappyHexMeshDict:
         type: searchableBox
         scaling:                    # refine even smaller sub-box inside sim domain
           front: 1.0
-          back:  2.0
+          back:  5.0
           side:  0.5
           top:   0.5
         mode: inside                # only refine cells *inside* the box
@@ -103,6 +106,8 @@ snappyHexMeshDict:
           top:   0.2
         mode: inside                # only refine cells *inside* the box
         levels: [5, 6]
+
+ 
 
     locationInMesh: (0 0 0)         # seed point that is **inside** the fluid
     allowFreeStandingZoneFaces: false # rare exotic option → usually keep false
@@ -123,10 +128,10 @@ snappyHexMeshDict:
       Geometry: {nSurfaceLayers: 10}
       bottom:   {nSurfaceLayers: 10}
     expansionRatio:        1.2   # growth per layer (1 = uniform)
-    finalLayerThickness:   0.3   # 30 % of local cell height
-    minThickness:          0.005   # discard if <5 % of local cell
+    finalLayerThickness:   0.2   # 30 % of local cell height
+    minThickness:          0.0001   # discard if <5 % of local cell
     nGrow:                 0     # 0 → don’t grow layers onto neighbours
-    featureAngle:          270    # stop layer if surface bends >60°
+    featureAngle:          360    # stop layer if surface bends >60°
     nRelaxIter:            3     # smoothing sweeps of layer mesh
     nSmoothSurfaceNormals: 1
     nSmoothNormals:        3
@@ -213,6 +218,8 @@ control:
   timeFormat: general
   timePrecision: 6
   runTimeModifiable: true     # allow dict tweaks mid-run (meshStep only once)
+  adjustTimeStep: true
+  maxCo: 0.5
 
 ###########################################
 #              fvSchemes                  #

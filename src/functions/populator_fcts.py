@@ -2,6 +2,7 @@ import os
 import yaml
 from pathlib import Path
 import sys
+import warnings
 FUNCTIONS_PATH = Path(__file__).resolve().parent / "../../functions"
 sys.path.append(str(FUNCTIONS_PATH))
 
@@ -344,6 +345,7 @@ import os
 def generate_controlDict(controlDict_configU, controlDict_configA):
 
     runTimeModifiable = "yes" if controlDict_configA['runTimeModifiable'] == True else "no"
+    adjustTimeStep = "yes" if controlDict_configA['adjustTimeStep'] == True else "no"
 
     return f"""\
 FoamFile
@@ -369,6 +371,58 @@ writeCompression {controlDict_configA["writeCompression"]};
 timeFormat      {controlDict_configA["timeFormat"]};
 timePrecision   {controlDict_configA["timePrecision"]};
 runTimeModifiable {runTimeModifiable};
+adjustTimeStep  adjusttimeStep;
+maxCo           {controlDict_configA["maxCo"]};
+functions
+{{
+    // Continuity error diagnostics
+    continuityErrors
+    {{
+        type            continuityError;
+        functionObjectLibs ("libutilityFunctionObjects.so");
+        enabled         true;
+        outputControl   timeStep;
+        outputInterval  1;
+        cumulative      true;        // Adds cumulative error tracking
+    }}
+
+    // Optional: monitor pressure residuals
+    residuals
+    {{
+        type            residuals;
+        functionObjectLibs ("libutilityFunctionObjects.so");
+        enabled         true;
+        outputControl   timeStep;
+        outputInterval  1;
+        fields
+        (
+            p
+            U
+            k
+            epsilon
+        );
+    }}
+
+    // Optional: averaging velocity field (useful in steady simulations)
+    fieldAverage_U
+    {{
+        type            fieldAverage;
+        functionObjectLibs ("libfieldFunctionObjects.so");
+        enabled         true;
+        outputControl   timeStep;
+        outputInterval  1;
+        fields
+        (
+            U
+            {{
+                mean        on;
+                prime2Mean  on;
+                base        time;
+            }}
+        );
+    }}
+}}
+
 """
 
 def generate_fvSchemes(fvSchemes_configU, fvSchemes_configA):
@@ -511,7 +565,7 @@ relaxationFactors
 
 
 
-def generate_snappyHexMeshDict(snappyHexMesh_configU, snappyHexMesh_configA):
+def generate_snappyHexMeshDict(configU, configA, snappyHexMesh_configU, snappyHexMesh_configA):
     """
     Build snappyHexMeshDict from YAML-style Python dict.
 
@@ -556,23 +610,57 @@ def generate_snappyHexMeshDict(snappyHexMesh_configU, snappyHexMesh_configA):
         f'        file "{stl_file}";\n    }}'
     ]
 
+
+
     refinement_regions = cm_controlsA.get("refinementRegions", {})
+
     for region_name, box_cfg in refinement_regions.items():
-        if "scaling" in box_cfg:
-            bbox_min = suppl_fcts.compute_extended_bounds(
-                IO_fcts.load_geometry(f'constant/triSurface/{stl_file}'),
-                box_cfg["scaling"]
+        if "scaling" not in box_cfg:
+            continue
+
+        # Determine which STL to load
+        if "geometry" in box_cfg:
+            geom_key = box_cfg["geometry"]
+            geometries = configU["filePath"].get("geometries", {})
+
+            if geom_key in geometries:
+               stl_file = geometries[geom_key]["file"]
+            else:
+                warnings.warn(
+                    f"Geometry '{geom_key}' not found in userConfig['filePath']['geometries']; "
+                "falling back to full-car geometry."
+                )
+            # fall back to full-car STL (assumes key 'body' or a dedicated fullCar entry)
+                stl_file = geometries.get("body", {}).get("file", 
+                            stl_file)
+        # Load geometry and compute bounds
+                mesh = IO_fcts.load_geometry(f"{stl_file}")
+                bbox_min = suppl_fcts.compute_extended_bounds(mesh, box_cfg["scaling"])
+
+        else:
+            warnings.warn(
+                f"No 'geometry' specified for refinement region '{region_name}'; "
+            "using full-car geometry."
             )
-            ref_box_block = f"""
-        {box_cfg['name']}
-        {{
-            type {box_cfg['type']};
-            min ({bbox_min['x_min']} {bbox_min['y_min']} {bbox_min['z_min']});
-            max ({bbox_min['x_max']} {bbox_min['y_max']} {bbox_min['z_max']});
-        }}"""
-            geo_entries.append(ref_box_block)
+    # Load geometry and compute bounds
+            mesh = IO_fcts.load_geometry(f"constant/triSurface/{stl_file}")
+            bbox_min = suppl_fcts.compute_extended_bounds(mesh, box_cfg["scaling"])
+
+    # Build the snappyHexMesh refinement region entry
+        ref_box_block = f"""
+    {box_cfg['name']}
+    {{
+        type        {box_cfg['type']};
+        min         ({bbox_min['x_min']} {bbox_min['y_min']} {bbox_min['z_min']});
+        max         ({bbox_min['x_max']} {bbox_min['y_max']} {bbox_min['z_max']});
+        mode        {box_cfg.get('mode', 'inside')};
+        levels      ({' '.join(map(str, box_cfg.get('levels', [])))});
+    }}"""
+
+        geo_entries.append(ref_box_block)
 
     geometry_block = "\n".join(geo_entries)
+
 
     # ------------------------------------------------------------------ #
     # 4) refinementSurfaces + refinementRegions blocks                   #

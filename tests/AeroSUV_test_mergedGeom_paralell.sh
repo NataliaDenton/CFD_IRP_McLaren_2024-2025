@@ -8,8 +8,8 @@ MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
 POTENTIAL_LOG="${LOG_DIR}/potentialFoam.log"
 SOLVER_LOG="${LOG_DIR}/simpleFoam.log"
-
-
+configDir="../../../src/configs/Aero_SUV_mergedGeometry"
+numProc="4"
 
 # ---- FUNCTIONS ----
 
@@ -115,7 +115,7 @@ check_directory_exists "constant/triSurface"
 
 
 
-singularity exec ../../../containers/container.sif python3 ../../../src/scripts/Geometry/mergeGeometry.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/Geometry/mergeGeometry.py --configDir $configDir|| {
   echo "❌ Python script mergeGeometry.py failed"
   exit 1
 }
@@ -127,18 +127,18 @@ surfaceTransformPoints \
   constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl
 
 # Make sure the Python script is executable or specify interpreter
-singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/meshGeneration.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/meshGeneration.py --configDir $configDir|| {
   echo "❌ Python script meshGeneration.py failed"
   exit 1
 }
 
-singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/constant.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/constant.py --configDir $configDir|| {
   echo "❌ Python script constant.py failed"
   exit 1
 }
 
 
-singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/system.py || {
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/system.py --configDir $configDir|| {
   echo "❌ Python script system.py failed"
   exit 1
 }
@@ -146,23 +146,29 @@ singularity exec ../../../containers/container.sif python3 ../../../src/scripts/
 # Mesh Generation Steps
 run_step "Running blockMesh" "blockMesh" "${MESH_LOG}"
 
-#### snappy step
-run_step "Decomposing the domain" "decomposePar" "${LOG_DIR}/decomposePar.log"
-
 run_step "Running surfaceFeatureExtract" "surfaceFeatureExtract" "${LOG_DIR}/surfaceFeatureExtract.log"
 
 
-run_step "Running snappyHexMesh in parallel" "mpirun -np 4 snappyHexMesh -parallel -overwrite" "${SNAPPY_LOG}"
+# Parallel meshing
+run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
 
-# running the initial conditions creator 
-singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py || {
+
+
+
+# Generate serial initial conditions before decomposition
+singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py --configDir $configDir || {
   echo "❌ Python script 0.py failed"
   exit 1
 }
 
-run_step "Running simpleFoam in parallel" "mpirun -np 4 simpleFoam -parallel" "${SOLVER_LOG}"
+
+# Now decompose both mesh and fields
+run_step "Decomposing the domain" "decomposePar -force" "${LOG_DIR}/decomposePar2.log"
+# Solve
+run_step "Running simpleFoam in parallel" "mpirun -np ${numProc} simpleFoam -parallel" "${SOLVER_LOG}"
 
 run_step "Reconstructing solution fields" "reconstructPar" "${LOG_DIR}/reconstructPar.log"
+
 
 
 
