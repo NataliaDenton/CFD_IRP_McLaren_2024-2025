@@ -1,0 +1,202 @@
+###########################################
+#     Parrallel computing settings        #
+###########################################
+cores: 16
+
+
+
+###########################################
+#            Case settings                #
+###########################################
+filePath:
+
+  caseDir: "../src/Openfoam/AeroSUV_mergedGeom_case_medium"
+  logDir: "log"
+  logMesh: "log/blockMesh.log"
+  logSnappy: "log/snappyHexMesh.log"
+  logPotential: "log/potentialFoam.log"
+  logSolver: "log/simpleFoam.log"
+###########################################
+#          Geometry Settings              #
+###########################################
+  geometries:           
+    body:               #   Key can be any short name.
+      file: "constant/triSurface/Geometry/01_body.stl"
+    sideMirrors:
+      file: "constant/triSurface/Geometry/02_side-mirrors.stl"
+    underbody:
+      file: "constant/triSurface/Geometry/08_underbody-flat.stl"
+    wheelsFront:
+      file: "constant/triSurface/Geometry/17_wheels-front.stl"
+    wheelsRear:
+      file: "constant/triSurface/Geometry/18_wheels-rear.stl"
+    rearEnd:
+      file: "constant/triSurface/Geometry/03_rear-end_estate.stl"
+    coolingBlocker:
+      file: "constant/triSurface/Geometry/20_cooling-air-closing.stl"
+
+###########################################
+#                Meshing                  #
+###########################################
+mesh:
+  useSnappy: true     # now disabled
+  useCfMesh: false      # enable cfMesh path
+
+snappyHexMeshDict:         # ⚙ High-level toggles; detailed settings in advancedConfig.
+  castellatedMesh: true    #   Rough cut from background mesh.
+  snap: true               #   Pull cell faces onto STL surfaces.
+  addLayers: true          #   Inflate near-wall prisms for y⁺ control.
+  refinementRegions: true  #   Enables extra box/surface refinements (see advanced).
+
+###########################################
+#            Fluid Properties             #
+###########################################
+fluid:                      # ⚙ Standard sea-level dry air, 15 °C.
+  name: air
+  rho: 1.184      # kg m⁻³  (density)
+  nu: 1.56e-5      # m² s⁻¹ (kinematic viscosity)
+
+###########################################
+#            Turbulence Model             #
+###########################################
+turbulence:
+  simulationType: RAS                 # ⚙ Choose among kEpsilon, kOmegaSST, etc.
+  model: kEpsilon
+
+###########################################
+#           initial conditions            #
+###########################################
+
+fields:
+  - U
+  - p
+  - k
+  - epsilon
+  - nut
+
+U:
+  internalField: [31 , 0, 0]
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: [31 , 0 ,0 ]
+    outlet:
+      type: zeroGradient
+    bottom:
+      type: fixedValue
+      value: [31 , 0 ,0 ]
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: fixedValue
+      value: [0 , 0 ,0 ]
+
+
+p:
+  internalField: 1.01325e5
+  boundaries:
+    inlet:
+      type: zeroGradient
+    outlet:
+      type: fixedValue
+      value: 1.01325e5
+    bottom:
+      type: zeroGradient
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: zeroGradient
+
+
+k:
+  internalField: 2.69
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: 2.69
+    outlet:
+      type: zeroGradient
+    bottom:
+      type: kqRWallFunction
+      value: uniform 2.69
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: kqRWallFunction
+      value: uniform 2.69
+
+
+
+epsilon:
+  internalField: 7.45
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: 7.45
+    outlet:
+      type: zeroGradient
+    bottom:
+      type: epsilonWallFunction
+      value: uniform 7.45
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: epsilonWallFunction
+      value: uniform 7.45
+
+
+nut:
+  internalField: 0.0908
+  boundaries:
+    inlet:
+      type: calculated
+      value: 0.0908
+    outlet:
+      type: calculated
+      value: 0.0908
+    bottom:
+      type: nutkWallFunction
+      value: uniform 0
+    top:
+      type: symmetryPlane
+    front:
+      type: symmetryPlane
+    back:
+      type: symmetryPlane
+    Geometry:
+      type: nutkWallFunction
+      value: uniform 0
+
+###########################################
+#               Control                   #
+###########################################
+control:
+  # ---------- global time settings ----------
+  startTime:    0        # s   simulation start
+  endTime:      5      # s   run duration
+  avarageTimeStart: 3   # s solution avarages from this point
+  deltaT:       1e-2       # s   pseudo-time step (steady solver uses this as iterate counter)
+  writeControl: timeStep #   write every N steps
+  writeInterval: 50
+  purgeWrite:   100       #   keep last 11 time folders
+
+  # ---------- numerical defaults ----------
+fvSchemes:
+  default: steadyState # ⚙ “steadyState” ddt scheme for simpleFoam-style runs
+

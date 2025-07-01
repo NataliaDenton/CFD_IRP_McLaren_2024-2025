@@ -20,8 +20,20 @@ filePath:
 #          Geometry Settings              #
 ###########################################
   geometries:           
+    body:               #   Key can be any short name.
+      file: "constant/triSurface/Geometry/01_body.stl"
+    sideMirrors:
+      file: "constant/triSurface/Geometry/02_side-mirrors.stl"
+    underbody:
+      file: "constant/triSurface/Geometry/08_underbody-flat.stl"
     wheelsFront:
       file: "constant/triSurface/Geometry/17_wheels-front.stl"
+    wheelsRear:
+      file: "constant/triSurface/Geometry/18_wheels-rear.stl"
+    rearEnd:
+      file: "constant/triSurface/Geometry/03_rear-end_estate.stl"
+    coolingBlocker:
+      file: "constant/triSurface/Geometry/20_cooling-air-closing.stl"
 
 ###########################################
 #                Meshing                  #
@@ -72,7 +84,7 @@ U:
       type: zeroGradient
     bottom:
       type: fixedValue
-      value: [0 , 0 ,0 ]
+      value: [27 , 0 ,0 ]
     top:
       type: symmetryPlane
     front:
@@ -180,7 +192,7 @@ control:
   endTime:      2      # s   run duration
   deltaT:       1e-3       # s   pseudo-time step (steady solver uses this as iterate counter)
   writeControl: timeStep #   write every N steps
-  writeInterval: 20
+  writeInterval: 100
   purgeWrite:   11       #   keep last 11 time folders
   # ---------- numerical defaults ----------
 fvSchemes:

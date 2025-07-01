@@ -1,0 +1,189 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version: 2312                                   |
+|   \  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      snappyHexMeshDict;
+}
+
+castellatedMesh on;
+snap            on;
+addLayers       on;
+
+debug 0;
+mergeTolerance 1e-6;
+
+geometry
+{
+    Geometry
+    {
+        type triSurfaceMesh;
+        file "Geometry/mergedGeometry/mergedGeometry.stl";
+    }
+
+    refinementBox
+    {
+        type        searchableBox;
+        min         (-5.449009895324707 -2.0476601123809814 -0.023994600400328636);
+        max         (26.898059844970703 2.0476601123809814 2.386932373046875);
+        mode        inside;
+        levels      (1 2);
+    }
+
+    refinementBox2
+    {
+        type        searchableBox;
+        min         (-1.752202033996582 -1.4333621263504028 -0.023994600400328636);
+        max         (7.258767127990723 1.4333621263504028 1.9047468900680542);
+        mode        inside;
+        levels      (2 3);
+    }
+
+    refinmentBoxWheelsFront
+    {
+        type        searchableBox;
+        min         (-1.752202033996582 -1.4333621263504028 -0.023994600400328636);
+        max         (7.258767127990723 1.4333621263504028 1.9047468900680542);
+        mode        inside;
+        levels      (3 4);
+    }
+
+    refinmentBoxWheelsRear
+    {
+        type        searchableBox;
+        min         (-1.752202033996582 -1.4333621263504028 -0.023994600400328636);
+        max         (7.258767127990723 1.4333621263504028 1.9047468900680542);
+        mode        inside;
+        levels      (3 4);
+    }
+}
+
+castellatedMeshControls
+{
+    maxLocalCells        25000000;
+    maxGlobalCells       50000000;
+    minRefinementCells   10;
+    nCellsBetweenLevels  3;
+    mergeTolerance       1e-6;
+
+    features             ();
+
+    refinementSurfaces
+    {
+        Geometry
+        {
+            level (3 4);
+        }
+    }
+
+    resolveFeatureAngle  30;
+
+    refinementRegions
+    {
+    refinementBox
+    {
+        mode inside;
+        levels ((1 2));
+    }
+    refinementBox2
+    {
+        mode inside;
+        levels ((2 3));
+    }
+    refinmentBoxWheelsFront
+    {
+        mode inside;
+        levels ((3 4));
+    }
+    refinmentBoxWheelsRear
+    {
+        mode inside;
+        levels ((3 4));
+    }
+
+    }
+
+    locationInMesh       (0 0 0);
+    allowFreeStandingZoneFaces off;
+}
+
+snapControls
+{
+    nSmoothPatch    3;
+    tolerance       2.0;
+    nSolveIter      30;
+    nRelaxIter      5;
+
+    explicitFeatureSnap on;
+    multiRegionSnap     off;
+}
+
+
+
+addLayersControls
+{
+    relativeSizes   on;
+    layers
+    {
+        Geometry
+        {
+            nSurfaceLayers 15;
+        }
+        bottom
+        {
+            nSurfaceLayers 0;
+        }
+    }
+    expansionRatio            1.2;
+    finalLayerThickness       0.3;
+    minThickness              1e-6;
+    nGrow                     0;
+    featureAngle              180;
+    nRelaxIter                3;
+    nSmoothSurfaceNormals     1;
+    nSmoothNormals            3;
+    nSmoothThickness          10;
+    maxFaceThicknessRatio     0.5;
+    maxThicknessToMedialRatio 0.3;
+    minMedialAxisAngle        60;
+    nBufferCellsNoExtrude     0;
+    nLayerIter                50;
+    nRelaxedIter              20;
+}
+
+meshQualityControls
+{
+    maxNonOrtho          65;
+    maxBoundarySkewness  20;
+    maxInternalSkewness  4;
+    maxConcave           80;
+    minVol               1e-13;
+    minTetQuality        1e-9;
+    minArea              -1;
+    minTwist             0.02;
+    minDeterminant       0.001;
+    minFaceWeight        0.02;
+    minVolRatio          0.01;
+    minTriangleTwist     -1;
+    nSmoothScale         4;
+    errorReduction       0.75;
+    relaxed
+    {
+        maxNonOrtho           65;
+        maxBoundarySkewness  20;
+        maxInternalSkewness  4;
+        maxConcave           80;
+        minVol               1e-13;
+        minTetQuality        1e-9;
+    }
+}
+
+// ************************************************************************* //

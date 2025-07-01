@@ -138,88 +138,82 @@ roots            {decomposeParDict_configA["roots"]};
 
 
 
+import os
 
-
-def write_field_file(field_name: str, configU: dict,configA: dict, case_dir: str):
+def write_field_file(field_name: str, configU: dict, configA: dict, case_dir: str):
     """
-    Write OpenFOAM field file (e.g., U, p, k, epsilon, nut) to the '0/' directory.
+    Generate OpenFOAM field file (e.g., U, p, k, epsilon, nut) in the '0/' directory
+    based on structured YAML configuration.
 
     Args:
-        field_name: Name of the field (e.g., "U", "p", "k").
-        config: Parsed YAML config dictionary from config_0.yaml.
-        case_dir: Path to the OpenFOAM case directory.
+        field_name: Name of the field (e.g., 'U', 'p', 'k')
+        configU: Field values and boundaries from config YAML
+        configA: Field dimensions from auxiliary config YAML
+        case_dir: Path to OpenFOAM case directory
     """
 
-    # --- Ensure config section exists ---
-    if field_name not in configU:
-        raise KeyError(f"Missing '{field_name}' section in config_0.yaml.")
-
+    if field_name not in configU or field_name not in configA:
+        raise KeyError(f"Missing '{field_name}' in configU or configA.")
 
     field_cfg = configU[field_name]
-    field_cfgA = configA[field_name]
-    case_dir = os.path.join('../../',case_dir)
-    dimensions = ' '.join(map(str, field_cfgA["dimensions"]))
+    field_aux = configA[field_name]
+
+    case_dir = os.path.abspath(os.path.join('../../', case_dir))
+
+    # --- Determine Field Class and Dimensions ---
+    dimensions = ' '.join(map(str, field_aux["dimensions"]))
     internal = field_cfg["internalField"]
-    if isinstance(internal, list):
-        internal_field = f"({ ' '.join(map(str, internal)) })"
+
+    if isinstance(internal, list):  # Vector field
+        internal_field = f"({' '.join(map(str, internal))})"
         field_type = "volVectorField"
-    else:
-        internal_field = str(internal)
+    else:  # Scalar
+        internal_field = str(float(internal)) if not isinstance(internal, str) else internal
         field_type = "volScalarField"
 
-    # --- Read mesh boundaries from 'constant/polyMesh/boundary' ---
-    boundary_path = Path(case_dir) / "constant" / "polyMesh" / "boundary"
-    with open(boundary_path, 'r') as f:
-        lines = f.readlines()
+    # --- Build boundaryField string ---
+    boundary_defs = field_cfg.get("boundaries", {})
+    special_patch_types = ["symmetryPlane", "empty", "wedge", "cyclic", "processor", "symmetry"]
 
-    mesh_boundaries = []
-    for i, line in enumerate(lines):
-        if line.strip().endswith('{'):
-            previous = lines[i - 1].strip()
-            if previous:
-                mesh_boundaries.append(previous)
-
-    # --- Construct boundaryField ---
     boundary_field = ""
-    user_boundaries = field_cfg.get("boundaries", {})
+    for patch, props in boundary_defs.items():
+        patch_type = props.get("type", "zeroGradient")
+        value = props.get("value", None)
 
-    for boundary in mesh_boundaries:
-        b_type = "zeroGradient"
-        b_value = ""
+        if patch_type in special_patch_types:
+            value_str = ""
+        elif patch_type in ["fixedValue", "calculated"]:
+            if isinstance(value, list):
+                value_str = f"        value           uniform ({' '.join(map(str, value))});\n"
+            else:
+                value_str = f"        value           uniform {float(value)};\n"
+        elif patch_type.endswith("WallFunction"):
+            # OpenFOAM requires 'uniform' in these cases
+            value_str = ""
+            if isinstance(value, str) and value.startswith("uniform"):
+                value_str = f"        value           {value};\n"
+            elif isinstance(value, (int, float)):
+                value_str = f"        value           uniform {value};\n"
+        elif patch_type == "noSlip":
+            patch_type = "fixedValue"
+            value_str = "        value           uniform (0 0 0);\n"
+        else:
+            value_str = ""
+            if value is not None:
+                if isinstance(value, list):
+                    value_str = f"        value           uniform ({' '.join(map(str, value))});\n"
+                else:
+                    value_str = f"        value           uniform {value};\n"
 
-        if boundary in user_boundaries:
-            entry = user_boundaries[boundary]
-            b_type = entry["type"]
-            special_pure_patch_types = [
-                 "symmetryPlane", "empty", "wedge", "cyclic", "processor", "symmetry"
-            ]
-            
-            if b_type in special_pure_patch_types:
-                b_value = ""  # No value required
-            elif b_type in ["fixedValue", "calculated", "nutkWallFunction",
-                "kqRWallFunction", "epsilonWallFunction"]:
-
-                val = entry.get("value", None)
-                if isinstance(val, list):
-                    b_value = f"        value           uniform ({' '.join(map(str, val))});\n"
-                elif isinstance(val, (float, int, str)):
-                    if b_type in ["nutkWallFunction", "epsilonWallFunction", "kqRWallFunction"]:
-                    # Wall functions require a raw scalar, NOT 'uniform'
-                        b_value = f"        value           {val};\n"
-                    else:
-                        b_value = f"        value           uniform {val};\n"
-
-            elif b_type == "noSlip":
-                b_type = "fixedValue"
-                b_value = "        value           uniform (0 0 0);\n"
-
-        boundary_field += f"""    {boundary}
+        boundary_field += f"""    {patch}
     {{
-        type            {b_type};
-{b_value}    }}\n\n"""
+        type            {patch_type};
+{value_str}    }}\n\n"""
 
-    # --- Write file to 0/<field_name> ---
+    # --- Write to disk ---
+    os.makedirs(os.path.join(case_dir, "0"), exist_ok=True)
     field_file_path = os.path.join(case_dir, "0", field_name)
+
     with open(field_file_path, 'w') as f:
         f.write(f"""/*--------------------------------*- C++ -*----------------------------------*\\
 | =========                 |                                                 |
@@ -247,25 +241,23 @@ boundaryField
 {boundary_field}}}
 """)
 
-    print(f"✅ Generated '0/{field_name}'.")
+    print(f"✅ Field '{field_name}' written to 0/{field_name}")
 
 
-def write_all_fields(ConfigU,ConfigA, case_dir):
+def write_all_fields(configU: dict, configA: dict, case_dir: str):
     """
-    Wrapper to write all fields listed in the config YAML.
-
-    Args:
-        config_path: Path to config_0.yaml
-        case_dir: OpenFOAM case path
+    Loop over all fields specified in both configU and configA 'fields' lists,
+    writing OpenFOAM field files for each.
     """
+    fields_u = set(configU.get("fields", []))
+    fields_a = set(configA.get("fields", []))
+    common_fields = fields_u.intersection(fields_a)
 
-    field_list = ConfigU.get("fields", [])
-    if not field_list:
-        raise ValueError("No 'fields' key found in config_0.yaml.")
+    if not common_fields:
+        raise ValueError("No common fields found between configU and configA.")
 
-    for field in field_list:
-        write_field_file(field, ConfigU, ConfigA, case_dir)
-
+    for field_name in common_fields:
+        write_field_file(field_name, configU, configA, case_dir)
 
 
 
@@ -342,10 +334,13 @@ def populate_turbulenceProperties(ConfigU,ConfigA, case_dir):
 
 import os
 
-def generate_controlDict(controlDict_configU, controlDict_configA):
-
-    runTimeModifiable = "yes" if controlDict_configA['runTimeModifiable'] == True else "no"
-    adjustTimeStep = "yes" if controlDict_configA['adjustTimeStep'] == True else "no"
+def generate_controlDict(configU, configA):
+    controlDict_configU = configU['control']
+    controlDict_configA = configA['control']
+    forcesCoeffs_config = configA['forceCoeffs']
+    unsteadyIO_config = configA['unsteadyIO']
+    runTimeModifiable = "yes" if controlDict_configA['runTimeModifiable'] else "no"
+    adjustTimeStep = "yes" if controlDict_configA['adjustTimeStep'] else "no"
 
     return f"""\
 FoamFile
@@ -371,10 +366,40 @@ writeCompression {controlDict_configA["writeCompression"]};
 timeFormat      {controlDict_configA["timeFormat"]};
 timePrecision   {controlDict_configA["timePrecision"]};
 runTimeModifiable {runTimeModifiable};
-adjustTimeStep  adjusttimeStep;
+adjustTimeStep  {adjustTimeStep};
 maxCo           {controlDict_configA["maxCo"]};
+
 functions
 {{
+
+    fieldAverage
+    {{
+        type                fieldAverage;
+        functionObjectLibs  ("libfieldFunctionObjects.so");
+        enabled             true;
+        outputControl       timeStep;
+        outputInterval      {controlDict_configU["writeInterval"]};
+
+        timeStart           {controlDict_configU["avarageTimeStart"]};
+        timeEnd             {controlDict_configU["endTime"]};
+
+        fields
+        (
+            U
+            {{
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }}
+
+            p
+            {{
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }}
+        );
+    }}
     // Continuity error diagnostics
     continuityErrors
     {{
@@ -382,47 +407,44 @@ functions
         functionObjectLibs ("libutilityFunctionObjects.so");
         enabled         true;
         outputControl   timeStep;
-        outputInterval  1;
-        cumulative      true;        // Adds cumulative error tracking
+        outputInterval  {controlDict_configU["writeInterval"]};
+        cumulative      true;
     }}
 
-    // Optional: monitor pressure residuals
-    residuals
+    // Compute drag and lift coefficients
+
+    forceCoeffs
     {{
-        type            residuals;
-        functionObjectLibs ("libutilityFunctionObjects.so");
-        enabled         true;
-        outputControl   timeStep;
-        outputInterval  1;
-        fields
-        (
-            p
-            U
-            k
-            epsilon
-        );
+        type                forceCoeffs;
+        functionObjectLibs  ("libforces.so");
+        enabled             {str(forcesCoeffs_config["enabled"]).lower()};
+        outputControl       timeStep;
+        outputInterval      {controlDict_configU["writeInterval"]};
+        patches             ({forcesCoeffs_config["patches"]});
+        rho                 rhoInf;
+        rhoInf              {forcesCoeffs_config["rhoInf"]};               // freestream density [kg/m^3]
+        magUInf             {forcesCoeffs_config["magUInf"]};
+        lRef                {forcesCoeffs_config["lRef"]};
+        Aref                {forcesCoeffs_config["Aref"]};
+        CofR                ({' '.join(map(str, forcesCoeffs_config["CofR"]))});
+        liftDir             ({' '.join(map(str, forcesCoeffs_config["liftDir"]))});
+        dragDir             ({' '.join(map(str, forcesCoeffs_config["dragDir"]))});
+        pitchAxis           ({' '.join(map(str, forcesCoeffs_config["pitchAxis"]))});
     }}
 
-    // Optional: averaging velocity field (useful in steady simulations)
-    fieldAverage_U
+    yPlus
     {{
-        type            fieldAverage;
-        functionObjectLibs ("libfieldFunctionObjects.so");
-        enabled         true;
-        outputControl   timeStep;
-        outputInterval  1;
-        fields
-        (
-            U
-            {{
-                mean        on;
-                prime2Mean  on;
-                base        time;
-            }}
-        );
+        type            yPlus;
+        libs            ("libfieldFunctionObjects.so");
+        patches             ({forcesCoeffs_config["patches"]});
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    timeStep;
+        writeInterval   {controlDict_configU["writeInterval"]};  // adjust as needed
+        log             true;
+        timeStart       0;
     }}
 }}
-
 """
 
 def generate_fvSchemes(fvSchemes_configU, fvSchemes_configA):
@@ -837,6 +859,15 @@ meshQualityControls
     minTriangleTwist     {quality_ctrlA['minTriangleTwist']};
     nSmoothScale         {quality_ctrlA['nSmoothScale']};
     errorReduction       {quality_ctrlA['errorReduction']};
+    relaxed
+    {{
+        maxNonOrtho           {quality_ctrlA['maxNonOrtho']};
+        maxBoundarySkewness  {quality_ctrlA['maxBoundarySkewness']};
+        maxInternalSkewness  {quality_ctrlA['maxInternalSkewness']};
+        maxConcave           {quality_ctrlA['maxConcave']};
+        minVol               {quality_ctrlA['minVol']};
+        minTetQuality        {quality_ctrlA['minTetQuality']};
+    }}
 }}
 
 // ************************************************************************* //

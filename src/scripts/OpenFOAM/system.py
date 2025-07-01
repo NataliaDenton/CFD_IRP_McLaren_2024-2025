@@ -42,7 +42,7 @@ paths = {
 
 # --- Populate control and decomposition files ---
 IO_fcts.write_text_file(
-    populator_fcts.generate_controlDict(configU['control'], configA['control']),
+    populator_fcts.generate_controlDict(configU, configA),
     paths['controlDict']
 )
 print(f"controlDict written to: {paths['controlDict']}")

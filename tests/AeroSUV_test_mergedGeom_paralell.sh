@@ -122,7 +122,7 @@ singularity exec ../../../containers/container.sif python3 ../../../src/scripts/
 
 
 surfaceTransformPoints \
-  -scale "(0.001 0.001 0.001)" \
+  -scale "(0.004 0.004 0.004)" \
   constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl \
   constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl
 
@@ -142,31 +142,26 @@ singularity exec ../../../containers/container.sif python3 ../../../src/scripts/
   echo "❌ Python script system.py failed"
   exit 1
 }
-
-# Mesh Generation Steps
-run_step "Running blockMesh" "blockMesh" "${MESH_LOG}"
-
-run_step "Running surfaceFeatureExtract" "surfaceFeatureExtract" "${LOG_DIR}/surfaceFeatureExtract.log"
-
-
-# Parallel meshing
-run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
-
-
-
-
 # Generate serial initial conditions before decomposition
 singularity exec ../../../containers/container.sif python3 ../../../src/scripts/OpenFOAM/0.py --configDir $configDir || {
   echo "❌ Python script 0.py failed"
   exit 1
 }
 
+# Mesh Generation Steps
+run_step "Running blockMesh" "blockMesh" "${MESH_LOG}"
+run_step "Running surfaceFeatureExtract" "surfaceFeatureExtract" "${LOG_DIR}/surfaceFeatureExtract.log"
 
-# Now decompose both mesh and fields
-run_step "Decomposing the domain" "decomposePar -force" "${LOG_DIR}/decomposePar2.log"
-# Solve
+# Decompose for parallel meshing
+run_step "Decomposing for parallel meshing" "decomposePar -force" "${LOG_DIR}/decomposePar_mesh.log"
+
+# Run snappyHexMesh in parallel
+run_step "Running snappyHexMesh in parallel" "mpirun -np ${numProc} snappyHexMesh -parallel -overwrite" "${SNAPPY_LOG}"
+
+# Solve in parallel
 run_step "Running simpleFoam in parallel" "mpirun -np ${numProc} simpleFoam -parallel" "${SOLVER_LOG}"
 
+# Reconstruct final solution
 run_step "Reconstructing solution fields" "reconstructPar" "${LOG_DIR}/reconstructPar.log"
 
 

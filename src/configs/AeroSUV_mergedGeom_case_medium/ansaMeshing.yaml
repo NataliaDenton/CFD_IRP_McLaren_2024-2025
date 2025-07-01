@@ -1,0 +1,48 @@
+##############################################
+#         ANSA Simulation Setup              #
+##############################################
+
+project:
+  name: "AeroSUV_ansa_mesh"
+  savePath: "../src/ansa/Projects/"
+  logPath: "log/ansa_pre.log"
+
+geometry:
+  sourceType: "STL"   # or "CAD", "STEP", etc.
+  files:
+    - path: ../ansa/Geometry/mergedGeometry.stl"
+      name: "Geometry"
+
+cleanup:
+  enable: true
+  operations:
+    - fillHoles
+    - removeDoubleEntities
+    - geometryChecks:
+        - intersections
+        - penetrations
+        - freeEdges
+
+meshing:
+  surfaceMesh:
+    algorithm: "CFD_Tria"
+    targetLength: 10
+    curvature: true
+    proximity: true
+  volumeMesh:
+    method: "Tetra"
+    inflationLayers: 3
+    firstLayerHeight: 0.5
+
+boundaryConditions:
+  patchNaming:
+    inlet: "inlet"
+    outlet: "outlet"
+    symmetry: ["top", "front", "back"]
+    wall: ["Geometry", "bottom"]
+  assignAutomatically: true
+
+export:
+  format: "OpenFOAM"
+  filePath: "../src/Openfoam/convertedCase"
+
