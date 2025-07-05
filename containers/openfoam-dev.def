@@ -1,58 +1,73 @@
-# ---------------------------------*-sh-*------------------------------------
-# Copyright (C) 2021-2024 OpenCFD Ltd.
-# SPDX-License-Identifier: (GPL-3.0-or-later)
-#
-# Create OpenFOAM '-dev' image using Ubuntu 22.04.
-#
-# Example build:
-#     apptainer build --fakeroot openfoam_dev_2406.sif openfoam-dev.def
-#
-# ---------------------------------------------------------------------------
 Bootstrap: docker
-From: ubuntu:22.04
+From: ubuntu:24.04
+Stage: build
 
-%files
-    openfoam-files.rc/* /openfoam/
-    requirements.txt /openfoam/requirements.txt
 
 %post
-    DEBIAN_FRONTEND=noninteractive
+    apt-get -y update && apt-get -y full-upgrade
+    apt-get install -y build-essential cmake git ca-certificates flex git gcc
 
-    echo "🔹 Updating APT sources..."
-    apt-get update
+    # --- START ADDITION: Set timezone and locale during build ---
+    # Set DEBIAN_FRONTEND to noninteractive to prevent prompts during apt-get install
+    export DEBIAN_FRONTEND=noninteractive
+    # Set timezone to UTC and locale to C.UTF-8 for consistent, non-interactive builds
+    echo "Etc/UTC" > /etc/timezone
+    ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
+    apt-get install -y locales
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+    locale-gen en_US.UTF-8
+    export LANG="en_US.UTF-8"
+    export LC_ALL="en_US.UTF-8"
+    # Revert DEBIAN_FRONTEND to default
+    export DEBIAN_FRONTEND=dialog
+    # --- END ADDITION ---
 
-    echo "🔹 Installing system dependencies..."
-    apt-get -y install --no-install-recommends \
-        python3 \
-        python3-venv \
-        python3-pip \
-        apt-utils vim-tiny nano-tiny wget ca-certificates rsync \
-        passwd libnss-wrapper
 
-    echo "🔹 Setting up Python virtual environment..."
-    python3 -m venv /openfoam/venv
-    /openfoam/venv/bin/pip install --no-cache-dir --upgrade pip
+    mkdir -p /root/OpenFOAM
+    cd /root/OpenFOAM
+    git clone https://develop.openfoam.com/Development/openfoam.git
+    git clone https://develop.openfoam.com/Development/ThirdParty-common.git
 
-    echo "🔹 Installing Python packages..."
-    /openfoam/venv/bin/pip install --no-cache-dir -r /openfoam/requirements.txt
+    cd /root/OpenFOAM/openfoam
+    git checkout OpenFOAM-v2406
 
-    echo "🔹 Installing OpenFOAM..."
-    wget -q -O - https://dl.openfoam.com/add-debian-repo.sh | bash
-    apt-get update
-    apt-get -y install --no-install-recommends openfoam2406-dev
+    cd /root/OpenFOAM/ThirdParty-common/
+    git checkout v2406
+    
+    apt-get install -y openmpi-bin libopenmpi-dev
+    mv /root/OpenFOAM/openfoam /root/OpenFOAM/OpenFOAM-v2406
+
+    set +e
+    . /root/OpenFOAM/OpenFOAM-v2406/etc/bashrc || true
+    set -e
+    # Based on your container_tree.txt, ThirdParty-common Allwmake is here.
+    cd /root/OpenFOAM/ThirdParty-common/
+    ./Allwmake
+    cd /root/OpenFOAM/OpenFOAM-v2406/
+    ./Allwmake -j 32
+
+    # Python + venv + pip
+    apt-get install -y python3 python3-venv python3-pip
+
+    # Setup Python venv
+    python3 -m venv /root/OpenFOAM/pyenv
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir --upgrade pip setuptools
+
+    # --- START FIX: Each Python library on a separate line with full pip command ---
+    # This ensures maximum clarity and isolation for each package installation.
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir numpy
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir matplotlib==3.7.1
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir pandas==2.0.3
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir trimesh==3.23.5
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir openfoamparser-ilya==0.16
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir PyFoam==0.6.8
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir scipy
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir numpy-stl==2.16.3
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir scikit-learn
+    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir pyyaml
+    # --- END FIX ---
+
+    # Clean up
+    apt-get clean
     rm -rf /var/lib/apt/lists/*
 
-    echo "🔹 Finalizing permissions..."
-    /bin/sh /openfoam/assets/post-install.sh -fix-perms -no-sudo
-
-%runscript
-    echo "🔹 Sourcing OpenFOAM and Python venv..."
-    source /openfoam/venv/bin/activate
-    source /openfoam/bash.rc
-    exec "$@"
-
-%labels
-    Author OpenCFD Ltd.
-    Description OpenFOAM 2406 with Python venv for cloud deployment
-
-# ---------------------------------------------------------------------------

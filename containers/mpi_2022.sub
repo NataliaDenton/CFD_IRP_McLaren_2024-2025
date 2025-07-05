@@ -24,7 +24,7 @@
 ##	32 CPUs: select=2:ncpus=16:mpiprocs=16
 ##	..etc..
 ##
-#PBS -l select=1:ncpus=1:mpiprocs=16
+#PBS -l select=2:ncpus=16:mpiprocs=16
 ##
 ## STEP 3:
 ##
@@ -40,7 +40,7 @@
 ## five_day	- 120 hours
 ## ten_day	- 240 hours (by special arrangement)
 ##
-#PBS -q one_hour
+#PBS -q six_hour
 ##
 ## STEP 4:
 ##
@@ -95,9 +95,8 @@ module load apptainer    # or `module load singularity`
 ## - change YOUR_EXECUTABLE to your own filename
 ## 
 
-apptainer build --fakeroot --disable-cache \
-    myimage.sif \
-    Python_container.def
+./build_and_move_openfoam.sh
+
 
 ## Tidy up the log directory
 ## DO NOT CHANGE THE LINE BELOW
