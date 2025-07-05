@@ -1,12 +1,59 @@
 #!/bin/bash
 set -eo pipefail
 
+
 # === CONFIG ===
 PROJECT_ROOT=$(readlink -f "$(dirname "$0")/..")
 CASE_DIR_REL="src/Openfoam/FluentConvertedCase"
 CASE_DIR="${PROJECT_ROOT}/${CASE_DIR_REL}"
 CONTAINER="${PROJECT_ROOT}/containers/openfoam_dev_2406.sif"
-MESH_FILE_REL="src/Openfoam/AeroSUV_mergedGeom_case/constant/triSurface/Cume_ICEM.msh"
+MESH_FILE_REL="src/ext_mesh/AhmedBody_Org_250704_4_zip.msh"
+MESH_FILE="${PROJECT_ROOT}/${MESH_FILE_REL}"
+
+LOG_DIR="${CASE_DIR}/log"
+mkdir -p "$LOG_DIR"
+
+CONVERT_LOG="${LOG_DIR}/fluent3DMeshToFoam.log"
+SOLVER_LOG="${LOG_DIR}/simpleFoam.log"
+CHECK_LOG="${LOG_DIR}/sanity_check.log"
+
+# CORRECTED: Use the path confirmed by your manual debugging
+OPENFOAM_ENV="source /root/OpenFOAM/OpenFOAM-v2406/etc/bashrc"
+# CORRECTED: Use the path from container_tree.txt
+PYTHON_VENV="/root/OpenFOAM/pyenv/bin/python"
+
+# === Start Sanity Check ===
+echo "🚀 Starting Fluent-to-Foam pipeline" | tee "$CHECK_LOG"
+[[ -f "$MESH_FILE" ]] || { echo "❌ Fluent mesh file not found: $MESH_FILE" | tee -a "$CHECK_LOG"; exit 1; }
+echo "✅ Fluent mesh file found: $MESH_FILE" | tee -a "$CHECK_LOG"
+
+# === Fluent Mesh Conversion ===
+echo "🔄 Converting Fluent mesh to OpenFOAM..." | tee -a "$CHECK_LOG"
+apptainer exec "$CONTAINER" /bin/bash -c "$OPENFOAM_ENV && fluent3DMeshToFoam \"$MESH_FILE\" -case \"$CASE_DIR\"" >> "$CONVERT_LOG" 2>&1
+
+if grep -q "End" "$CONVERT_LOG"; then
+  echo "✅ Mesh conversion successful." | tee -a "$CHECK_LOG"
+else
+  echo "❌ Mesh conversion failed. Check log at $CONVERT_LOG" | tee -a "$CHECK_LOG"
+  exit 1
+fi
+
+# === Prepare case.foam for ParaView ===
+echo "📦 Creating case.foam for ParaView..." | tee -a "$CHECK_LOG"
+touch "$CASE_DIR/case.foam"
+echo "✅ case.foam created. You can now open the case directly in ParaView." | tee -a "$CHECK_LOG"
+
+
+
+# ==== Legacy Reference Block (disabled) ====
+: <<'END_COMMENT'
+
+# === CONFIG ===
+PROJECT_ROOT=$(readlink -f "$(dirname "$0")/..")
+CASE_DIR_REL="src/Openfoam/FluentConvertedCase"
+CASE_DIR="${PROJECT_ROOT}/${CASE_DIR_REL}"
+CONTAINER="${PROJECT_ROOT}/containers/openfoam_dev_2406.sif"
+MESH_FILE_REL="src/Openfoam/AeroSUV_mergedGeom_case/constant/triSurface/AhmedBody_Org_250704_4_zip.msh"
 MESH_FILE="${PROJECT_ROOT}/${MESH_FILE_REL}"
 
 LOG_DIR="${CASE_DIR}/log"
@@ -133,4 +180,6 @@ rmdir "$CASE_DIR/VTK_OUT" || true
 echo "🎉 Pipeline complete!"
 echo "✅ Logs: $LOG_DIR"
 echo "✅ VTK output saved in: $VTK_OUT"
+
+END_COMMENT
 
