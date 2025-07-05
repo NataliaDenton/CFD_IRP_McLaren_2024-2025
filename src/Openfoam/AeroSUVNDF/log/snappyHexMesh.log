@@ -1,0 +1,102 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2112                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _14aeaf8dab-20211220 OPENFOAM=2112 version=v2112
+Arch   : "LSB;label=32;scalar=64"
+Exec   : snappyHexMesh -overwrite
+Date   : Jul 02 2025
+Time   : 14:04:28
+Host   : cr2cn68
+PID    : 200106
+I/O    : uncollated
+Case   : /mnt/beegfs/home/nataliadenton.denton/CFD_IRP_McLaren_2024-2025/src/Openfoam/AeroSUVNDF
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+Create mesh for time = 0
+
+Read mesh in = 6.4 s
+
+Overall mesh bounding box  : (-23.933 -6.14298 -0.0239946) (50.0031 6.14298 5.6015)
+Relative tolerance         : 1e-06
+Absolute matching distance : 7.51608e-05
+
+Reading refinement surfaces.
+Read refinement surfaces in = 4.86 s
+
+Reading refinement shells.
+Refinement level 2 for all cells inside refinementBox
+Refinement level 3 for all cells inside refinementBox2
+Refinement level 4 for all cells inside refinmentBoxWheelsFront
+Refinement level 4 for all cells inside refinmentBoxWheelsRear
+Read refinement shells in = 0 s
+
+Setting refinement level of surface to be consistent with shells.
+For geometry Geometry detected 0 uncached triangles out of 2292452
+Checked shell refinement in = 10.79 s
+
+Reading features.
+Read features in = 0 s
+
+
+Determining initial surface intersections
+-----------------------------------------
+
+Edge intersection testing:
+    Number of edges             : 4670840
+    Number of edges to retest   : 0
+    Number of intersected edges : 0
+Edge intersection testing:
+    Number of edges             : 4670840
+    Number of edges to retest   : 4670840
+    Number of intersected edges : 1878
+Calculated surface intersections in = 4.45 s
+
+Initial mesh : cells:1536188  faces:4670840  points:1599078
+Cells per refinement level:
+    0	1536188
+
+Adding patches for surface regions
+----------------------------------
+
+Patch Type                Region                        
+----- ----                ------                        
+Geometry:
+
+6     wall                Geometry                      
+
+Added patches in = 0.06 s
+
+Edge intersection testing:
+    Number of edges             : 4670840
+    Number of edges to retest   : 0
+    Number of intersected edges : 1878
+Decomposition method none [1]
+
+Refinement phase
+----------------
+
+
+
+--> FOAM FATAL ERROR: (openfoam-2112)
+Point (0 0 0) is not inside the mesh or on a face or edge.
+Bounding box of the mesh:(-23.933 -6.14298 -0.0239946) (50.0031 6.14298 5.6015)
+
+    From static Foam::labelList Foam::refinementParameters::findCells(bool, const Foam::polyMesh&, const pointField&)
+    in file snappyHexMeshDriver/refinementParameters/refinementParameters.C at line 242.
+
+FOAM exiting
+

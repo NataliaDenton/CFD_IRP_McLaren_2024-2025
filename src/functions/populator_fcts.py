@@ -2,6 +2,7 @@ import os
 import yaml
 from pathlib import Path
 import sys
+import warnings
 FUNCTIONS_PATH = Path(__file__).resolve().parent / "../../functions"
 sys.path.append(str(FUNCTIONS_PATH))
 
@@ -137,88 +138,82 @@ roots            {decomposeParDict_configA["roots"]};
 
 
 
+import os
 
-
-def write_field_file(field_name: str, configU: dict,configA: dict, case_dir: str):
+def write_field_file(field_name: str, configU: dict, configA: dict, case_dir: str):
     """
-    Write OpenFOAM field file (e.g., U, p, k, epsilon, nut) to the '0/' directory.
+    Generate OpenFOAM field file (e.g., U, p, k, epsilon, nut) in the '0/' directory
+    based on structured YAML configuration.
 
     Args:
-        field_name: Name of the field (e.g., "U", "p", "k").
-        config: Parsed YAML config dictionary from config_0.yaml.
-        case_dir: Path to the OpenFOAM case directory.
+        field_name: Name of the field (e.g., 'U', 'p', 'k')
+        configU: Field values and boundaries from config YAML
+        configA: Field dimensions from auxiliary config YAML
+        case_dir: Path to OpenFOAM case directory
     """
 
-    # --- Ensure config section exists ---
-    if field_name not in configU:
-        raise KeyError(f"Missing '{field_name}' section in config_0.yaml.")
-
+    if field_name not in configU or field_name not in configA:
+        raise KeyError(f"Missing '{field_name}' in configU or configA.")
 
     field_cfg = configU[field_name]
-    field_cfgA = configA[field_name]
-    case_dir = os.path.join('../../',case_dir)
-    dimensions = ' '.join(map(str, field_cfgA["dimensions"]))
+    field_aux = configA[field_name]
+
+    case_dir = os.path.abspath(os.path.join('../../', case_dir))
+
+    # --- Determine Field Class and Dimensions ---
+    dimensions = ' '.join(map(str, field_aux["dimensions"]))
     internal = field_cfg["internalField"]
-    if isinstance(internal, list):
-        internal_field = f"({ ' '.join(map(str, internal)) })"
+
+    if isinstance(internal, list):  # Vector field
+        internal_field = f"({' '.join(map(str, internal))})"
         field_type = "volVectorField"
-    else:
-        internal_field = str(internal)
+    else:  # Scalar
+        internal_field = str(float(internal)) if not isinstance(internal, str) else internal
         field_type = "volScalarField"
 
-    # --- Read mesh boundaries from 'constant/polyMesh/boundary' ---
-    boundary_path = Path(case_dir) / "constant" / "polyMesh" / "boundary"
-    with open(boundary_path, 'r') as f:
-        lines = f.readlines()
+    # --- Build boundaryField string ---
+    boundary_defs = field_cfg.get("boundaries", {})
+    special_patch_types = ["symmetryPlane", "empty", "wedge", "cyclic", "processor", "symmetry"]
 
-    mesh_boundaries = []
-    for i, line in enumerate(lines):
-        if line.strip().endswith('{'):
-            previous = lines[i - 1].strip()
-            if previous:
-                mesh_boundaries.append(previous)
-
-    # --- Construct boundaryField ---
     boundary_field = ""
-    user_boundaries = field_cfg.get("boundaries", {})
+    for patch, props in boundary_defs.items():
+        patch_type = props.get("type", "zeroGradient")
+        value = props.get("value", None)
 
-    for boundary in mesh_boundaries:
-        b_type = "zeroGradient"
-        b_value = ""
+        if patch_type in special_patch_types:
+            value_str = ""
+        elif patch_type in ["fixedValue", "calculated"]:
+            if isinstance(value, list):
+                value_str = f"        value           uniform ({' '.join(map(str, value))});\n"
+            else:
+                value_str = f"        value           uniform {float(value)};\n"
+        elif patch_type.endswith("WallFunction"):
+            # OpenFOAM requires 'uniform' in these cases
+            value_str = ""
+            if isinstance(value, str) and value.startswith("uniform"):
+                value_str = f"        value           {value};\n"
+            elif isinstance(value, (int, float)):
+                value_str = f"        value           uniform {value};\n"
+        elif patch_type == "noSlip":
+            patch_type = "fixedValue"
+            value_str = "        value           uniform (0 0 0);\n"
+        else:
+            value_str = ""
+            if value is not None:
+                if isinstance(value, list):
+                    value_str = f"        value           uniform ({' '.join(map(str, value))});\n"
+                else:
+                    value_str = f"        value           uniform {value};\n"
 
-        if boundary in user_boundaries:
-            entry = user_boundaries[boundary]
-            b_type = entry["type"]
-            special_pure_patch_types = [
-                 "symmetryPlane", "empty", "wedge", "cyclic", "processor", "symmetry"
-            ]
-            
-            if b_type in special_pure_patch_types:
-                b_value = ""  # No value required
-            elif b_type in ["fixedValue", "calculated", "nutkWallFunction",
-                "kqRWallFunction", "epsilonWallFunction"]:
-
-                val = entry.get("value", None)
-                if isinstance(val, list):
-                    b_value = f"        value           uniform ({' '.join(map(str, val))});\n"
-                elif isinstance(val, (float, int, str)):
-                    if b_type in ["nutkWallFunction", "epsilonWallFunction", "kqRWallFunction"]:
-                    # Wall functions require a raw scalar, NOT 'uniform'
-                        b_value = f"        value           {val};\n"
-                    else:
-                        b_value = f"        value           uniform {val};\n"
-
-            elif b_type == "noSlip":
-                b_type = "fixedValue"
-                b_value = "        value           uniform (0 0 0);\n"
-
-        boundary_field += f"""    {boundary}
+        boundary_field += f"""    {patch}
     {{
-        type            {b_type};
-{b_value}    }}\n\n"""
+        type            {patch_type};
+{value_str}    }}\n\n"""
 
-    # --- Write file to 0/<field_name> ---
+    # --- Write to disk ---
+    os.makedirs(os.path.join(case_dir, "0"), exist_ok=True)
     field_file_path = os.path.join(case_dir, "0", field_name)
+
     with open(field_file_path, 'w') as f:
         f.write(f"""/*--------------------------------*- C++ -*----------------------------------*\\
 | =========                 |                                                 |
@@ -246,25 +241,23 @@ boundaryField
 {boundary_field}}}
 """)
 
-    print(f"✅ Generated '0/{field_name}'.")
+    print(f"✅ Field '{field_name}' written to 0/{field_name}")
 
 
-def write_all_fields(ConfigU,ConfigA, case_dir):
+def write_all_fields(configU: dict, configA: dict, case_dir: str):
     """
-    Wrapper to write all fields listed in the config YAML.
-
-    Args:
-        config_path: Path to config_0.yaml
-        case_dir: OpenFOAM case path
+    Loop over all fields specified in both configU and configA 'fields' lists,
+    writing OpenFOAM field files for each.
     """
+    fields_u = set(configU.get("fields", []))
+    fields_a = set(configA.get("fields", []))
+    common_fields = fields_u.intersection(fields_a)
 
-    field_list = ConfigU.get("fields", [])
-    if not field_list:
-        raise ValueError("No 'fields' key found in config_0.yaml.")
+    if not common_fields:
+        raise ValueError("No common fields found between configU and configA.")
 
-    for field in field_list:
-        write_field_file(field, ConfigU, ConfigA, case_dir)
-
+    for field_name in common_fields:
+        write_field_file(field_name, configU, configA, case_dir)
 
 
 
@@ -341,9 +334,13 @@ def populate_turbulenceProperties(ConfigU,ConfigA, case_dir):
 
 import os
 
-def generate_controlDict(controlDict_configU, controlDict_configA):
-
-    runTimeModifiable = "yes" if controlDict_configA['runTimeModifiable'] == True else "no"
+def generate_controlDict(configU, configA):
+    controlDict_configU = configU['control']
+    controlDict_configA = configA['control']
+    forcesCoeffs_config = configA['forceCoeffs']
+    unsteadyIO_config = configA['unsteadyIO']
+    runTimeModifiable = "yes" if controlDict_configA['runTimeModifiable'] else "no"
+    adjustTimeStep = "yes" if controlDict_configA['adjustTimeStep'] else "no"
 
     return f"""\
 FoamFile
@@ -369,6 +366,85 @@ writeCompression {controlDict_configA["writeCompression"]};
 timeFormat      {controlDict_configA["timeFormat"]};
 timePrecision   {controlDict_configA["timePrecision"]};
 runTimeModifiable {runTimeModifiable};
+adjustTimeStep  {adjustTimeStep};
+maxCo           {controlDict_configA["maxCo"]};
+
+functions
+{{
+
+    fieldAverage
+    {{
+        type                fieldAverage;
+        functionObjectLibs  ("libfieldFunctionObjects.so");
+        enabled             true;
+        outputControl       timeStep;
+        outputInterval      {controlDict_configU["writeInterval"]};
+
+        timeStart           {controlDict_configU["avarageTimeStart"]};
+        timeEnd             {controlDict_configU["endTime"]};
+
+        fields
+        (
+            U
+            {{
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }}
+
+            p
+            {{
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }}
+        );
+    }}
+    // Continuity error diagnostics
+    continuityErrors
+    {{
+        type            continuityError;
+        functionObjectLibs ("libutilityFunctionObjects.so");
+        enabled         true;
+        outputControl   timeStep;
+        outputInterval  {controlDict_configU["writeInterval"]};
+        cumulative      true;
+    }}
+
+    // Compute drag and lift coefficients
+
+    forceCoeffs
+    {{
+        type                forceCoeffs;
+        functionObjectLibs  ("libforces.so");
+        enabled             {str(forcesCoeffs_config["enabled"]).lower()};
+        outputControl       timeStep;
+        outputInterval      {controlDict_configU["writeInterval"]};
+        patches             ({forcesCoeffs_config["patches"]});
+        rho                 rhoInf;
+        rhoInf              {forcesCoeffs_config["rhoInf"]};               // freestream density [kg/m^3]
+        magUInf             {forcesCoeffs_config["magUInf"]};
+        lRef                {forcesCoeffs_config["lRef"]};
+        Aref                {forcesCoeffs_config["Aref"]};
+        CofR                ({' '.join(map(str, forcesCoeffs_config["CofR"]))});
+        liftDir             ({' '.join(map(str, forcesCoeffs_config["liftDir"]))});
+        dragDir             ({' '.join(map(str, forcesCoeffs_config["dragDir"]))});
+        pitchAxis           ({' '.join(map(str, forcesCoeffs_config["pitchAxis"]))});
+    }}
+
+    yPlus
+    {{
+        type            yPlus;
+        libs            ("libfieldFunctionObjects.so");
+        patches             ({forcesCoeffs_config["patches"]});
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    timeStep;
+        writeInterval   {controlDict_configU["writeInterval"]};  // adjust as needed
+        log             true;
+        timeStart       0;
+    }}
+}}
 """
 
 def generate_fvSchemes(fvSchemes_configU, fvSchemes_configA):
@@ -509,7 +585,9 @@ relaxationFactors
 }}
 """
 
-def generate_snappyHexMeshDict(snappyHexMesh_configU, snappyHexMesh_configA):
+
+
+def generate_snappyHexMeshDict(configU, configA, snappyHexMesh_configU, snappyHexMesh_configA):
     """
     Build snappyHexMeshDict from YAML-style Python dict.
 
@@ -554,23 +632,57 @@ def generate_snappyHexMeshDict(snappyHexMesh_configU, snappyHexMesh_configA):
         f'        file "{stl_file}";\n    }}'
     ]
 
+
+
     refinement_regions = cm_controlsA.get("refinementRegions", {})
+
     for region_name, box_cfg in refinement_regions.items():
-        if "scaling" in box_cfg:
-            bbox_min = suppl_fcts.compute_extended_bounds(
-                IO_fcts.load_geometry(f'constant/triSurface/{stl_file}'),
-                box_cfg["scaling"]
+        if "scaling" not in box_cfg:
+            continue
+
+        # Determine which STL to load
+        if "geometry" in box_cfg:
+            geom_key = box_cfg["geometry"]
+            geometries = configU["filePath"].get("geometries", {})
+
+            if geom_key in geometries:
+               stl_file = geometries[geom_key]["file"]
+            else:
+                warnings.warn(
+                    f"Geometry '{geom_key}' not found in userConfig['filePath']['geometries']; "
+                "falling back to full-car geometry."
+                )
+            # fall back to full-car STL (assumes key 'body' or a dedicated fullCar entry)
+                stl_file = geometries.get("body", {}).get("file", 
+                            stl_file)
+        # Load geometry and compute bounds
+                mesh = IO_fcts.load_geometry(f"{stl_file}")
+                bbox_min = suppl_fcts.compute_extended_bounds(mesh, box_cfg["scaling"])
+
+        else:
+            warnings.warn(
+                f"No 'geometry' specified for refinement region '{region_name}'; "
+            "using full-car geometry."
             )
-            ref_box_block = f"""
-        {box_cfg['name']}
-        {{
-            type {box_cfg['type']};
-            min ({bbox_min['x_min']} {bbox_min['y_min']} {bbox_min['z_min']});
-            max ({bbox_min['x_max']} {bbox_min['y_max']} {bbox_min['z_max']});
-        }}"""
-            geo_entries.append(ref_box_block)
+    # Load geometry and compute bounds
+            mesh = IO_fcts.load_geometry(f"constant/triSurface/{stl_file}")
+            bbox_min = suppl_fcts.compute_extended_bounds(mesh, box_cfg["scaling"])
+
+    # Build the snappyHexMesh refinement region entry
+        ref_box_block = f"""
+    {box_cfg['name']}
+    {{
+        type        {box_cfg['type']};
+        min         ({bbox_min['x_min']} {bbox_min['y_min']} {bbox_min['z_min']});
+        max         ({bbox_min['x_max']} {bbox_min['y_max']} {bbox_min['z_max']});
+        mode        {box_cfg.get('mode', 'inside')};
+        levels      ({' '.join(map(str, box_cfg.get('levels', [])))});
+    }}"""
+
+        geo_entries.append(ref_box_block)
 
     geometry_block = "\n".join(geo_entries)
+
 
     # ------------------------------------------------------------------ #
     # 4) refinementSurfaces + refinementRegions blocks                   #
@@ -747,8 +859,209 @@ meshQualityControls
     minTriangleTwist     {quality_ctrlA['minTriangleTwist']};
     nSmoothScale         {quality_ctrlA['nSmoothScale']};
     errorReduction       {quality_ctrlA['errorReduction']};
+    relaxed
+    {{
+        maxNonOrtho           {quality_ctrlA['maxNonOrtho']};
+        maxBoundarySkewness  {quality_ctrlA['maxBoundarySkewness']};
+        maxInternalSkewness  {quality_ctrlA['maxInternalSkewness']};
+        maxConcave           {quality_ctrlA['maxConcave']};
+        minVol               {quality_ctrlA['minVol']};
+        minTetQuality        {quality_ctrlA['minTetQuality']};
+    }}
 }}
 
 // ************************************************************************* //
 """
+
+def generate_cfMeshDict(meshDict_configU, meshDict_configA):
+    """
+    Build cfMesh meshDict from YAML-style Python dicts.
+
+    Supports:
+      - multiple layer patches listed in shm_config["addLayersControls"]["layers"]
+      - optional refinement region box with computed bounds
+    """
+
+    # 1) Convenience handles
+    stl_file = meshDict_configA["geometry"]["Geometry"]["file"]
+    surface_name = meshDict_configA["geometry"]["Geometry"].get("name", "Geometry")
+    surface_type = meshDict_configA["geometry"]["Geometry"].get("type", "triSurfaceMesh")
+    refinement_surfaces = meshDict_configA.get("refinementSurfaces", {})
+    refinement_regions = meshDict_configA.get("refinementRegions", {})
+
+    # 2) Geometry block - surface mesh
+    geometry_entries = [
+        f'    {surface_name}\n'
+        f'    {{\n'
+        f'        type {surface_type};\n'
+        f'        file "{stl_file}";\n'
+    ]
+
+    # Add refinement surface levels if available
+    if "Geometry" in refinement_surfaces:
+        level = refinement_surfaces["Geometry"].get("level", 3)
+        geometry_entries.append(
+            f'        regions\n        {{\n'
+            f'            Geometry\n            {{\n'
+            f'                name {surface_name};\n'
+            f'                refinementLevel {level};\n'
+            f'            }}\n'
+            f'        }}\n'
+        )
+    geometry_entries.append('    }')  # close Geometry block
+
+    # 3) refinementBoxes blocks (multiple)
+    # For each refinementRegion defined, compute bounding box min/max and add block
+    for region_key, box_cfg in refinement_regions.items():
+        # Load points from STL file for bounding box calculation
+        points = IO_fcts.load_geometry(f'constant/triSurface/{stl_file}')
+
+        # Compute extended bounding box based on scaling factors from config
+        bbox_minmax = suppl_fcts.compute_extended_bounds(points, box_cfg.get("scaling", {}))
+
+        # Compose min and max lines
+        min_str = f'({bbox_minmax["x_min"]:.6f} {bbox_minmax["y_min"]:.6f} {bbox_minmax["z_min"]:.6f})'
+        max_str = f'({bbox_minmax["x_max"]:.6f} {bbox_minmax["y_max"]:.6f} {bbox_minmax["z_max"]:.6f})'
+
+        # Handle refinement levels: can be int or list of ints
+        levels = box_cfg.get("levels", box_cfg.get("level", 4))
+        # If levels is a list, take max (usually max level is relevant for meshDict)
+        if isinstance(levels, list):
+            ref_level = max(levels)
+        else:
+            ref_level = levels
+
+        # Append refinement box block string
+        geometry_entries.append(
+            f'    {box_cfg["name"]}\n'
+            f'    {{\n'
+            f'        type {box_cfg["type"]};\n'
+            f'        min {min_str};\n'
+            f'        max {max_str};\n'
+            f'        refinementLevel {ref_level};\n'
+            f'    }}'
+        )
+
+    geometry_block = "\n".join(geometry_entries)
+
+    # 4) meshSettings block from meshDict_configU (or default fallback)
+    meshSettings = meshDict_configU.get("meshSettings", {})
+    nCellsBetweenLevels = meshSettings.get("nCellsBetweenLevels", 3)
+    maxCellSize = meshSettings.get("maxCellSize", 0.1)
+    minCellSize = meshSettings.get("minCellSize", 0.001)
+    boundaryCellSize = meshSettings.get("boundaryCellSize", 0.02)
+    surfaceMeshRefinement_enable = meshSettings.get("surfaceMeshRefinement", {}).get("enable", 1)
+    internalRefinement_enable = meshSettings.get("internalRefinement", {}).get("enable", 1)
+
+    # 5) boundaryLayers block from meshDict_configU or meshDict_configA
+    boundaryLayers = meshDict_configA.get("boundaryLayers", {})
+    nLayers = boundaryLayers.get("nLayers", 10)
+    thicknessRatio = boundaryLayers.get("thicknessRatio", 0.3)
+    maxFirstLayerThickness = boundaryLayers.get("maxFirstLayerThickness", 0.05)
+    allowDiscontinuity = boundaryLayers.get("allowDiscontinuity", 0)
+    featureAngle = boundaryLayers.get("featureAngle", 60)
+
+    # 6) Compose final meshDict text output
+    return f"""/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \    /   O peration     | Version: dev-cfMesh                             |
+|   \  /    A nd           | Web:      https://sourceforge.net/projects/cfmesh|
+|    \/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      meshDict;
+}}
+
+surfaceFile "constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl"; // STL surface
+
+// Global cell size controls
+maxCellSize     0.3;     // Base size
+minCellSize     0.001;    // Smallest size allowed
+
+// Geometry definition
+geometry
+{{
+    Geometry
+    {{
+        type triSurfaceMesh;
+        file "constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl";
+    }}
+}}
+
+// Background mesh for external domain
+backgroundMesh
+{{
+    box
+    {{
+        type searchableBox;
+        min (-5 -5 -5);
+        max (5 5 5);
+    }}
+    cellSize 0.1;
+}}
+
+// Refinement boxes (make sure these are in external fluid domain)
+refinementBoxes
+{{
+    refinementBox
+    {{
+        type searchableBox;
+        min (-1.3622519969940186 -0.5119140148162842 -0.0059986598789691925);
+        max (3.258755922317505 0.5119140148162842 0.596733808517456);
+        insideLevel 4;
+    }}
+
+    refinementBox2
+    {{
+        type searchableBox;
+        min (-0.43805038928985596 -0.3583398163318634 -0.0059986598789691925);
+        max (1.8146910667419434 0.3583398163318634 0.4761873483657837);
+        insideLevel 6;
+    }}
+}}
+
+// Surface mesh refinement
+meshSettings
+{{
+    nCellsBetweenLevels 5; // analogous to snappy’s nCellsBetweenLevels
+    boundaryCellSize 0.02; // approximate surface refinement
+
+    surfaceMeshRefinement
+    {{
+        enable 1;
+        levels
+        {{
+            Geometry
+            {{
+                level (3 4);
+            }}
+        }}
+    }}
+
+    // Optionally, enable external refinement if your cfMesh version supports it
+    externalRefinement
+    {{
+        enable 1;
+    }}
+}}
+
+// Boundary layers
+boundaryLayers
+{{
+    nLayers                10;
+    thicknessRatio         0.3;
+    maxFirstLayerThickness 0.05;
+    allowDiscontinuity     0;
+    featureAngle           60;
+}}
+
+"""
+
+
 

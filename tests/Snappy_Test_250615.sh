@@ -16,6 +16,8 @@ SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"
 SOLVER_LOG="${LOG_DIR}/simpleFoam.log"
 CHECK_LOG="${LOG_DIR}/check_tools.log"
 RUN_LOG="${LOG_DIR}/pipeline.log"
+CONFIG_DIR_REL="src/configs/Aero_SUV_mergedGeometry"  # adjust if your config is elsewhere
+CONFIG_DIR="${PROJECT_ROOT}/${CONFIG_DIR_REL}"
 
 TOOLS=( blockMesh snappyHexMesh surfaceFeatureExtract simpleFoam foamToVTK )
 
@@ -46,6 +48,15 @@ check_tool() {
       && echo "✅ $tool is available." | tee -a "$CHECK_LOG" \
       || { echo "❌ $tool is missing or not working." | tee -a "$CHECK_LOG"; exit 1; }
 }
+
+# Check if config directory exists
+[[ -d "$CONFIG_DIR" ]] || { echo "❌ Config directory not found: $CONFIG_DIR" | tee -a "$RUN_LOG"; exit 1; }
+
+# Check for required config files
+[[ -f "$CONFIG_DIR/userConfig.yaml" ]] || { echo "❌ Missing userConfig.yaml in $CONFIG_DIR" | tee -a "$RUN_LOG"; exit 1; }
+[[ -f "$CONFIG_DIR/advancedConfig.yaml" ]] || { echo "❌ Missing advancedConfig.yaml in $CONFIG_DIR" | tee -a "$RUN_LOG"; exit 1; }
+
+echo "✅ Using config directory: $CONFIG_DIR" | tee -a "$RUN_LOG"
 
 # ---- MAIN ----
 
@@ -85,13 +96,24 @@ echo "✅ Sanity checks passed." | tee -a "$RUN_LOG"
 echo "📦 Merging STL geometry..." | tee -a "$RUN_LOG"
 apptainer exec -B "${PROJECT_ROOT}:/workspace" "$CONTAINER" \
   "$PYTHON_VENV" "/workspace/src/scripts/Geometry/mergeGeometry.py" \
+  --configDir "/workspace/${CONFIG_DIR_REL}" \
   2>&1 | tee -a "$RUN_LOG"
 echo "✅ Geometry merge complete." | tee -a "$RUN_LOG"
+
+echo "📏 Scaling merged STL..." | tee -a "$RUN_LOG"
+apptainer exec -B "${PROJECT_ROOT}:/workspace" "$CONTAINER" \
+  /bin/bash -c "${OPENFOAM_ENV} && cd /workspace/${CASE_DIR_REL_TO_PROJECT_ROOT} && \
+    surfaceTransformPoints -scale \"(0.001 0.001 0.001)\" \
+      constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl \
+      constant/triSurface/Geometry/mergedGeometry/mergedGeometry.stl" \
+  2>&1 | tee -a "$RUN_LOG"
+echo "✅ Geometry scaled." | tee -a "$RUN_LOG"
 
 echo "⚙️ Running OpenFOAM-setup Python scripts..." | tee -a "$RUN_LOG"
 for script in meshGeneration.py constant.py system.py; do
   apptainer exec -B "${PROJECT_ROOT}:/workspace" "$CONTAINER" \
     "$PYTHON_VENV" "/workspace/src/scripts/OpenFOAM/${script}" \
+    --configDir "/workspace/${CONFIG_DIR_REL}" \
     2>&1 | tee -a "$RUN_LOG" || { echo "❌ $script failed." | tee -a "$RUN_LOG"; exit 1; }
 done
 echo "✅ Case setup scripts complete." | tee -a "$RUN_LOG"
@@ -112,6 +134,7 @@ run_step "Running snappyHexMesh" "snappyHexMesh -overwrite" "${SNAPPY_LOG}"
 echo "🔢 Setting initial conditions via 0.py..." | tee -a "$RUN_LOG"
 apptainer exec -B "${PROJECT_ROOT}:/workspace" "$CONTAINER" \
   "$PYTHON_VENV" "/workspace/src/scripts/OpenFOAM/0.py" \
+  --configDir "/workspace/${CONFIG_DIR_REL}" \
   2>&1 | tee -a "$RUN_LOG" || { echo "❌ 0.py failed." | tee -a "$RUN_LOG"; exit 1; }
 echo "✅ Initial conditions set." | tee -a "$RUN_LOG"
 
