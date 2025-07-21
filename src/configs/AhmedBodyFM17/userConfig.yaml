@@ -1,0 +1,244 @@
+###########################################
+#     Parallel computing settings         #
+###########################################
+cores: 16               # number of CPU cores to use for parallel execution
+
+###########################################
+#            Case settings                #
+###########################################
+filePath:
+  caseDir: "../src/Openfoam/AhmedBodyFC"    # directory where the OpenFOAM case resides
+  logDir: "log"                            # base directory for all log files
+  logMesh: "log/blockMesh.log"             # log for background mesh generation
+  logSnappy: "log/snappyHexMesh.log"       # log for snappyHexMesh execution
+  logPotential: "log/potentialFoam.log"    # log for potentialFoam preprocessing
+  logSolver: "log/simpleFoam.log"          # log for the steady-state solver (simpleFoam)
+
+###########################################
+#          Geometry Settings              #
+###########################################
+geometries:                             # list of STL geometry parts to import
+  body:                                 # short key to reference the vehicle body
+    file: "constant/triSurface/Geometry/01_body.stl"
+  sideMirrors:
+    file: "constant/triSurface/Geometry/02_side-mirrors.stl"
+  underbody:
+    file: "constant/triSurface/Geometry/08_underbody-flat.stl"
+  wheelsFront:
+    file: "constant/triSurface/Geometry/17_wheels-front.stl"
+  wheelsRear:
+    file: "constant/triSurface/Geometry/18_wheels-rear.stl"
+  rearEnd:
+    file: "constant/triSurface/Geometry/03_rear-end_estate.stl"
+  coolingBlocker:
+    file: "constant/triSurface/Geometry/20_cooling-air-closing.stl"
+
+###########################################
+#                Meshing                  #
+###########################################
+mesh:
+  useSnappy: true      # enable snappyHexMesh workflow
+  useCfMesh: false     # disable cfMesh alternative path
+
+snappyHexMeshDict:    # high‑level toggles; detailed configuration resides in advancedConfig
+  castellatedMesh: true    # perform castellated‑mesh (cut background cells)
+  snap: true               # snap cell faces onto the STL geometry
+  addLayers: true          # add prism layers near walls for y⁺ control
+  refinementRegions: true  # activate region‑based and box‑based refinements
+
+###########################################
+#            Fluid Properties             #
+###########################################
+fluid:                    # physical properties of the working fluid
+  name: air
+  rho: 1.184              # fluid density [kg/m³] at 15 °C, sea‑level
+  nu: 1.56e-5             # kinematic viscosity [m²/s]
+
+###########################################
+#            Turbulence Model             #
+###########################################
+turbulence:
+  simulationType: RAS     # Reynolds‑Averaged Simulation framework   
+  model: kOmegaSST
+
+###########################################
+#           Initial conditions            #
+###########################################
+fields:
+  - U
+  - p
+  - k
+  - epsilon
+  - omega
+  - nut
+
+
+U:
+  internalField: [60, 0, 0]  # uniform freestream velocity [m/s]
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: [60, 0, 0]
+    outlet:
+      type: zeroGradient
+    moving_wall:
+      type: movingWallVelocity
+      value: [60, 0, 0]
+    top_wall:
+      type: symmetry       # since it's a wall, symmetryPlane not allowed
+    lh_wall:
+      type: symmetry
+    rh_wall:
+      type: symmetry
+    no_slip_wall:
+      type: fixedValue
+      value: [0, 0, 0]
+
+p:
+  internalField: 101325
+  boundaries:
+    inlet:
+      type: zeroGradient
+    outlet:
+      type: fixedValue
+      value: 101325
+    moving_wall:
+      type: zeroGradient
+    top_wall:
+      type: symmetry
+    lh_wall:
+      type: symmetry
+    rh_wall:
+      type: symmetry
+    no_slip_wall:
+      type: zeroGradient
+
+k:          ####### k = (3/2)(UI)^2 - U = 60, I=0.01
+  internalField: 0.54
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: 0.54
+    outlet:
+      type: zeroGradient
+    moving_wall:
+      type: kqRWallFunction
+      value: uniform 0.54
+    top_wall:
+      type: symmetry
+    lh_wall:
+      type: symmetry
+    rh_wall:
+      type: symmetry
+    no_slip_wall:
+      type: kqRWallFunction
+      value: uniform 0.54
+
+epsilon:        ###### epsilon = (C_mu)^(3/4)*(k^(3/2))/l --------------- l =0.07*L , C_mu = 0.09
+  internalField: 0.892
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: 0.892
+    outlet:
+      type: zeroGradient
+    moving_wall:
+      type: epsilonWallFunction
+      value: uniform 0.892
+    top_wall:
+      type: symmetry
+    lh_wall:
+      type: symmetry
+    rh_wall:
+      type: symmetry
+    no_slip_wall:
+      type: epsilonWallFunction
+      value: uniform 0.892
+
+omega:
+  internalField: 10.055       # Approximate, can be tuned later = epsilon/(beta * k) -----beta=0.009 - or w = (root k)/l
+  boundaries:
+    inlet:
+      type: fixedValue
+      value: 10.055
+    outlet:
+      type: zeroGradient
+    moving_wall:
+      type: omegaWallFunction
+      value: uniform 10.055
+    top_wall:
+      type: symmetry
+    lh_wall:
+      type: symmetry
+    rh_wall:
+      type: symmetry
+    no_slip_wall:
+      type: omegaWallFunction
+      value: uniform 10.055
+
+nut:
+  internalField: 0.0908
+  boundaries:
+    inlet:
+      type: calculated
+      value: 0.0908
+    outlet:
+      type: calculated
+      value: 0.0908
+    moving_wall:
+      type: nutkWallFunction
+      value: uniform 0
+    top_wall:
+      type: symmetry
+    lh_wall:
+      type: symmetry
+    rh_wall:
+      type: symmetry
+    no_slip_wall:
+      type: nutkWallFunction
+      value: uniform 0
+
+###########################################
+#               Control                   #
+###########################################
+
+control:
+  snappy:
+    application: snappyHexMesh
+    startTime: 0
+    endTime: 10
+    deltaT: 1e-2
+    writeControl: timeStep
+    writeInterval: 50
+    purgeWrite: 100
+
+  pimpleInit:                     # ← transient initialisation block
+    application: pimpleFoam
+    startTime: 0
+    endTime: 0.01
+    deltaT: 0.001
+    writeControl: timeStep
+    writeInterval: 10
+    purgeWrite: 0
+    writeFormat: ascii
+    writePrecision: 6
+
+  solver:                         # ← steady-state solver block
+    application: simpleFoam
+    adjustTimeStep: true
+    maxCo: 0.4    
+    startFrom: latestTime 
+    startTime: 0
+    stopAt: endTime
+    endTime: 10
+    deltaT: 0.01
+    writeControl: timeStep
+    writeInterval: 100
+    purgeWrite: 0
+    averageTimeStart: 1
+
+#####################################################
+# ---------- numerical defaults ----------
+fvSchemes:
+  default: steadyState    # use 'steadyState' scheme for time derivative (simpleFoam style)
+
