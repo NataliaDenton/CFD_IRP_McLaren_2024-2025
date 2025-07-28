@@ -3,7 +3,7 @@ set -eo pipefail
 
 # ---- CONFIGURATION ----
 CASE_NAME="AeroSUVNDM"
-CASE_DIR="../src/Openfoam/${CASE_NAME}"
+CASE_DIR="../../../src/Openfoam/${CASE_NAME}"
 LOG_DIR="log"
 MESH_LOG="${LOG_DIR}/blockMesh.log"
 SNAPPY_LOG="${LOG_DIR}/snappyHexMesh.log"

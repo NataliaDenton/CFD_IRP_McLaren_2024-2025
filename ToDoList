@@ -1,0 +1,19 @@
+To Do List
+
+
+-tests/AhmedBody folder need to change the case dir for them
+
+-src/functions merge the kepsilon into the populator_fcts
+
+-src/functions merge the k-omegasst into the populator_fcts
+
+-src/functions merge the laminar into the populator_fcts
+
+-clean up the config dir... set out one for each of the possible scinareios... ie, one for each of the AeroSUV, ahmedBody, kepsilon,komegasst, laminar, ansa. these should be well documented and placed into the example configs
+
+-removal of the pointwise work/ find a work around for this
+
+- merge the k-epsilon k-omegasst laminar, with the other scripts. including geometry lopading mesh production, then solving and post processing for each. 
+
+
+
