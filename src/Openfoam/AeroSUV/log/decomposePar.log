@@ -1,0 +1,218 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2112                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _14aeaf8dab-20211220 OPENFOAM=2112 version=v2112
+Arch   : "LSB;label=32;scalar=64"
+Exec   : decomposePar -force
+Date   : Aug 03 2025
+Time   : 19:16:00
+Host   : cr2cn119
+PID    : 2528053
+I/O    : uncollated
+Case   : /mnt/beegfs/home/nataliadenton.denton/CFD_IRP_McLaren_2024-2025/src/Openfoam/AeroSUV
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+
+Decomposing mesh
+
+Create mesh
+
+Calculating distribution of cells
+Decomposition method scotch [8] (region region0)
+
+Finished decomposition in 13.79 s
+
+Calculating original mesh data
+
+Distributing cells to processors
+
+Distributing faces to processors
+
+Distributing points to processors
+
+Constructing processor meshes
+Reading hexRef8 data : cellLevel
+Reading hexRef8 data : pointLevel
+Reading hexRef8 data : level0Edge
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+Processor 0
+    Number of cells = 617503
+    Number of faces shared with processor 1 = 7369
+    Number of faces shared with processor 2 = 601
+    Number of faces shared with processor 3 = 6599
+    Number of faces shared with processor 5 = 5978
+    Number of faces shared with processor 7 = 39
+    Number of processor patches = 5
+    Number of processor faces = 20586
+    Number of boundary faces = 43053
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+Processor 1
+    Number of cells = 612748
+    Number of faces shared with processor 0 = 7369
+    Number of faces shared with processor 2 = 3767
+    Number of faces shared with processor 3 = 4128
+    Number of faces shared with processor 4 = 131
+    Number of faces shared with processor 5 = 7508
+    Number of faces shared with processor 7 = 2
+    Number of processor patches = 6
+    Number of processor faces = 22905
+    Number of boundary faces = 40289
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+Processor 2
+    Number of cells = 618750
+    Number of faces shared with processor 0 = 601
+    Number of faces shared with processor 1 = 3767
+    Number of faces shared with processor 3 = 13202
+    Number of faces shared with processor 4 = 113
+    Number of faces shared with processor 5 = 91
+    Number of faces shared with processor 7 = 1119
+    Number of processor patches = 6
+    Number of processor faces = 18893
+    Number of boundary faces = 27211
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+Processor 3
+    Number of cells = 617380
+    Number of faces shared with processor 0 = 6599
+    Number of faces shared with processor 1 = 4128
+    Number of faces shared with processor 2 = 13202
+    Number of processor patches = 3
+    Number of processor faces = 23929
+    Number of boundary faces = 46891
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+Processor 4
+    Number of cells = 609154
+    Number of faces shared with processor 1 = 131
+    Number of faces shared with processor 2 = 113
+    Number of faces shared with processor 5 = 9777
+    Number of faces shared with processor 7 = 5201
+    Number of processor patches = 4
+    Number of processor faces = 15222
+    Number of boundary faces = 9259
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+Processor 5
+    Number of cells = 616730
+    Number of faces shared with processor 0 = 5978
+    Number of faces shared with processor 1 = 7508
+    Number of faces shared with processor 2 = 91
+    Number of faces shared with processor 4 = 9777
+    Number of faces shared with processor 7 = 208
+    Number of processor patches = 5
+    Number of processor faces = 23562
+    Number of boundary faces = 27543
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+Processor 6
+    Number of cells = 608306
+    Number of faces shared with processor 7 = 5896
+    Number of processor patches = 1
+    Number of processor faces = 5896
+    Number of boundary faces = 30309
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+Processor 7
+    Number of cells = 607360
+    Number of faces shared with processor 0 = 39
+    Number of faces shared with processor 1 = 2
+    Number of faces shared with processor 2 = 1119
+    Number of faces shared with processor 4 = 5201
+    Number of faces shared with processor 5 = 208
+    Number of faces shared with processor 6 = 5896
+    Number of processor patches = 6
+    Number of processor faces = 12465
+    Number of boundary faces = 20096
+
+Number of processor faces = 71729
+Max number of cells = 618750 (0.857164% above average 613491)
+Max number of processor patches = 6 (33.3333% above average 4.5)
+Max number of faces between processors = 23929 (33.4411% above average 17932.2)
+
+Time = 0
+
+Processor 0: field transfer
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+Processor 1: field transfer
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+Processor 2: field transfer
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+Processor 3: field transfer
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+Processor 4: field transfer
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+Processor 5: field transfer
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+Processor 6: field transfer
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+Processor 7: field transfer
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+End
+

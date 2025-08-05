@@ -28,8 +28,8 @@ ConfigA = IO_fcts.load_config(advanced_configs_PATH)
 
 # === FORCE COEFF ANALYSIS ===
 filename = "postProcessing/forceCoeffs/0/coefficient.dat"
-final_time = ConfigU["control"]["endTime"]
-average_start_time = ConfigU["control"]["avarageTimeStart"]
+final_time = ConfigU["control"]["solver"]["endTime"]
+average_start_time = ConfigU["control"]["solver"]["averageTimeStart"]
 average_last_seconds = final_time - average_start_time
 
 if not os.path.exists(filename):

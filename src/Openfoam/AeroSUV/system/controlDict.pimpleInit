@@ -1,0 +1,105 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+application     snappyHexMesh;
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         0.01;
+deltaT          0.001;
+writeControl    timeStep;
+writeInterval   10;
+purgeWrite      0;
+writeFormat     ascii;
+writePrecision  6;
+writeCompression uncompressed;
+timeFormat      general;
+timePrecision   6;
+runTimeModifiable yes;
+adjustTimeStep  yes;
+maxCo           0.5;
+
+functions
+{
+
+    fieldAverage
+    {
+        type                fieldAverage;
+        functionObjectLibs  ("libfieldFunctionObjects.so");
+        enabled             true;
+        outputControl       timeStep;
+        outputInterval      10;
+        timeStart           0;
+
+//-old-timeStart 0; // deprecated
+
+
+        timeEnd             0.01;
+
+        fields
+        (
+            U
+            {
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }
+
+            p
+            {
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }
+        );
+    }
+    // Continuity error diagnostics
+    continuityErrors
+    {
+        type            continuityError;
+        functionObjectLibs ("libutilityFunctionObjects.so");
+        enabled         true;
+        outputControl   timeStep;
+        outputInterval  10;
+        cumulative      true;
+    }
+
+    // Compute drag and lift coefficients
+
+    forceCoeffs
+    {
+        type                forceCoeffs;
+        functionObjectLibs  ("libforces.so");
+        enabled             true;
+        outputControl       timeStep;
+        outputInterval      10;
+        patches             (Geometry);
+        rho                 rhoInf;
+        rhoInf              1.184;               // freestream density [kg/m^3]
+        magUInf             50.0;
+        lRef                2.0;
+        Aref                4.0;
+        CofR                (0.0 0.0 0.0);
+        liftDir             (0.0 0.0 1.0);
+        dragDir             (1.0 0.0 0.0);
+        pitchAxis           (0.0 1.0 0.0);
+    }
+
+    yPlus
+    {
+        type            yPlus;
+        libs            ("libfieldFunctionObjects.so");
+        patches             (Geometry);
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    timeStep;
+        writeInterval   10;  // adjust as needed
+        log             true;
+        timeStart       0;
+    }
+}

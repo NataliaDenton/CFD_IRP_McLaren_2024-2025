@@ -1,1 +1,9 @@
+*.stl# Ignore singularity images
+*.sif
+
+# Ignore STL mesh files
 *.stl
+
+# Ignore polyMesh directory and its contents anywhere in the repo
+polyMesh/
+

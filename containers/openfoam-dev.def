@@ -55,7 +55,7 @@ Stage: build
 
     # --- START FIX: Each Python library on a separate line with full pip command ---
     # This ensures maximum clarity and isolation for each package installation.
-    /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir numpy
+    
     /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir matplotlib==3.7.1
     /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir pandas==2.0.3
     /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir trimesh==3.23.5
@@ -65,6 +65,8 @@ Stage: build
     /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir numpy-stl==2.16.3
     /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir scikit-learn
     /root/OpenFOAM/pyenv/bin/pip install --no-cache-dir pyyaml
+
+
     # --- END FIX ---
 
     # Clean up

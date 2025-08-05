@@ -4,7 +4,7 @@ from stl import mesh
 import json
 import numpy as np
 import os
-
+from pathlib import Path  # ✅ ADD THIS LINE
 
 
 # detect_inputmesh_type.py
@@ -71,4 +71,28 @@ def load_vertices(json_path: str) -> np.ndarray:
 def write_text_file(content: str, filepath: str):
     with open(filepath, "w") as f:
         f.write(content)
+
+
+def write_to_file(content: str, case_dir: str, subfolder: str, filename: str):
+    """
+    Write given text content to a file in the specified subfolder of the OpenFOAM case.
+
+    Parameters:
+    -----------
+    content : str
+        The dictionary content to write (e.g., fvSolution string).
+    case_dir : str
+        Base directory of the OpenFOAM case.
+    subfolder : str
+        Subdirectory inside the case (e.g., "system", "constant", "0").
+    filename : str
+        Name of the file to write (e.g., "fvSolution").
+    """
+    output_path = Path(case_dir) / subfolder
+    output_path.mkdir(parents=True, exist_ok=True)
+    file_path = output_path / filename
+
+    with open(file_path, 'w') as f:
+        f.write(content)
+    print(f"✅ File written: {file_path}")
 

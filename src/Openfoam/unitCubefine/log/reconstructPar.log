@@ -1,0 +1,668 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2112                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _14aeaf8dab-20211220 OPENFOAM=2112 version=v2112
+Arch   : "LSB;label=32;scalar=64"
+Exec   : reconstructPar
+Date   : Aug 04 2025
+Time   : 16:50:28
+Host   : cr2cn119
+PID    : 2564548
+I/O    : uncollated
+Case   : /mnt/beegfs/home/nataliadenton.denton/CFD_IRP_McLaren_2024-2025/src/Openfoam/unitCubefine
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+--> FOAM Warning : 
+    From static Foam::IOstreamOption::compressionType Foam::IOstreamOption::compressionEnum(const Foam::word&, Foam::IOstreamOption::compressionType)
+    in file db/IOstreams/IOstreams/IOstreamOption.C at line 115
+    Unknown compression specifier 'uncompressed', using compression off
+
+
+Reconstructing fields
+region=region0
+
+Time = 0.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 1.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 2.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 3.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 4.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 5.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 6
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 6.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 7
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 7.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 8
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 8.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 9
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 9.5
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+Time = 10
+
+Reconstructing FV fields
+
+    Reconstructing volScalarFields
+
+        epsilon
+        k
+        nut
+        p
+        pMean
+        yPlus
+
+    Reconstructing volVectorFields
+
+        U
+        UMean
+
+    Reconstructing surfaceScalarFields
+
+        phi
+
+Reconstructing point fields
+
+No point fields
+
+No lagrangian fields
+
+No FA fields
+
+
+End
+
